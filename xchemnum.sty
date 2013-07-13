@@ -1,0 +1,471 @@
+% ----------------------------------------------------------------------------
+% required packages:
+\RequirePackage{expl3,xparse,l3keys2e}
+% language support:
+\RequirePackage{translations}[2013/07/12]
+% greek alphabet for the labels matching to chemmacros' selection:
+\RequirePackage{chemgreek}
+
+% ----------------------------------------------------------------------------
+% provide the package:
+\ProvidesExplPackage{xchemnum}{25/06/2013}{0.1}{chemnum revisited (CN)}
+
+% ----------------------------------------------------------------------------
+% messages:
+\msg_new:nnn { xchemnum } { missing-label }
+  { the key `#1' has no label associated \msg_line_context: }
+
+% ----------------------------------------------------------------------------
+% variants of kernel functions:
+\cs_generate_variant:Nn \prop_gput:Nnn         { Nnx , cnx , cnV }
+\cs_generate_variant:Nn \quark_if_no_value:nTF { V }
+\cs_generate_variant:Nn \quark_if_no_value:nF  { V }
+\cs_generate_variant:Nn \seq_set_split:Nnn     { NV }
+
+% ----------------------------------------------------------------------------
+% temporary variables:
+\tl_new:N \l__xchemnum_tmp_main_label_tl
+\tl_new:N \l__xchemnum_tmp_sub_label_tl
+\tl_new:N \l__xchemnum_tmp_format_tl
+\tl_new:N \l__xchemnum_tmp_pre_tl
+\tl_new:N \l__xchemnum_tmp_post_tl
+
+\seq_new:N \l__xchemnum_tmpa_seq
+\seq_new:N \l__xchemnum_tmpb_seq
+
+% ----------------------------------------------------------------------------
+% label formats:
+\tl_const:Nn \c__xchemnum_arabic_label_tl { arabic }
+\tl_const:Nn \c__xchemnum_alph_label_tl   { alph }
+\tl_const:Nn \c__xchemnum_Alph_label_tl   { Alph }
+\tl_const:Nn \c__xchemnum_roman_label_tl  { roman }
+\tl_const:Nn \c__xchemnum_Roman_label_tl  { Roman }
+\tl_const:Nn \c__xchemnum_greek_label_tl  { greek }
+\tl_const:Nn \c__xchemnum_Greek_label_tl  { Greek }
+
+% #1: tl that holds the chosen format
+% #2: int expr that holds the value
+% #3: function to be used when an unknown format has been called
+\cs_new:Npn \__xchemnum_label_format:NnN #1#2#3
+  {
+    \tl_case:Nnn #1
+      {
+        \c__xchemnum_arabic_label_tl { \int_to_arabic:n { #2 } }
+        \c__xchemnum_alph_label_tl   { \int_to_alph:n   { #2 } }
+        \c__xchemnum_Alph_label_tl   { \int_to_Alph:n   { #2 } }
+        \c__xchemnum_roman_label_tl  { \int_to_roman:n  { #2 } }
+        \c__xchemnum_Roman_label_tl  { \int_to_Roman:n  { #2 } }
+        \c__xchemnum_greek_label_tl  { \chemgreek_int_to_greek:n { #2 } }
+        \c__xchemnum_Greek_label_tl  { \chemgreek_int_to_Greek:n { #2 } }
+      }
+      {% TODO: error/warning
+        #3 { #2 }
+      }
+  }
+
+% ----------------------------------------------------------------------------
+% auxiliary file:
+\AtBeginDocument
+  {
+    \file_if_exist:nT { \c_job_name_tl . cmpd }
+      { \file_input:n { \c_job_name_tl . cmpd } }
+    \iow_new:N   \g_xchemnum_auxfile_iow
+    \iow_open:Nn \g_xchemnum_auxfile_iow { ./ \c_job_name_tl . cmpd }
+    \iow_now:Nn  \g_xchemnum_auxfile_iow { \makeatletter }
+  }
+
+\AtEndDocument { \iow_close:N \g_xchemnum_auxfile_iow }
+
+% ----------------------------------------------------------------------------
+% variables:
+\int_new:N \g_xchemnum_compound_int
+\int_new:N \g_xchemnum_main_label_int
+
+% formatting of the label text:
+\tl_new:N  \l__xchemnum_label_format_tl
+\tl_set:Nn \l__xchemnum_label_format_tl       { \bfseries }
+% the format of the counters:
+\tl_new:N  \l__xchemnum_main_label_counter_format_tl
+\tl_set:Nn \l__xchemnum_main_label_counter_format_tl { arabic }
+\tl_new:N  \l__xchemnum_sub_label_counter_format_tl
+\tl_set:Nn \l__xchemnum_sub_label_counter_format_tl  { alph }
+% input separators:
+\tl_new:N  \l__xchemnum_compound_separator_tl
+\tl_set:Nn \l__xchemnum_compound_separator_tl { , }
+\tl_new:N  \l__xchemnum_sublabel_separator_tl
+\tl_set:Nn \l__xchemnum_sublabel_separator_tl { . }
+% this is a variable to hold tokens belonging to the main label independently
+% from the counter; it has been wanted by users to add the chapter number for
+% example:
+\tl_new:N  \l__xchemnum_pre_to_counter_format_tl
+
+\prop_new:N \g_xchemnum_compounds_prop
+\prop_new:N \g_xchemnum_subcompounds_prop
+\prop_new:N \l__xchemnum_label_properties_prop
+\prop_new:N \g_xchemnum_compounds_aux_prop
+
+\bool_new:N \l__xchemnum_automatic_label_bool
+\bool_set_true:N \l__xchemnum_automatic_label_bool
+\bool_new:N \l_xchemnum_register_label_bool
+\bool_new:N \l_xchemnum_write_label_bool
+
+% ----------------------------------------------------------------------------
+% a compound label has the following properties:
+% - an internal ID (int)
+% - an external ID (tl): the key the user chose
+% - the actual label; this is associated with the label integer if the
+%   automatic label has been chosen
+
+% declaration of a new label needs to:
+% - step the internal ID and create an associated property or keyval list
+% - create an associated sublabel integer
+% - save the external ID in the list
+% - save the label in the list
+% - save information like special formatting in the list
+% - add possible data from the auxiliary file to the list
+
+% a sub compound label has the following properties:
+% - an internal ID (int)
+% - an external ID (tl): the key the user chose
+% - the actual labelthis is associated with the sublabel integer if the
+%   automatic label has been chosen
+% - the associated internal ID of the main label it belongs to
+
+% declaration of a new sublabel needs to:
+% - step the internal ID and create an associated property or keyval list
+% - save the external ID in the list
+% - save the label in the list
+% - save information like special formatting in the list
+% - add possible data from the auxiliary file to the list
+
+% we need:
+% a function to declare a label
+% - do the declaration and also write the to the auxiliary file
+% a function to read a label
+% - this fetches the information previously stored with priority over data
+%   fetched from the auxiliary file
+% a function to write a label
+% - this prints the label according to the data gotten by the `read' function
+
+% ----------------------------------------------------------------------------
+% main-label functions:
+% #1: main ID
+\cs_new_protected:Npn \xchemnum_declare_main_label:n #1
+  {
+    \xchemnum_if_main_label:nF { #1 }
+      {
+        \xchemnum_register_main_label:n { #1 }
+        % create associated sub-label auxiliaries:
+        \prop_new:c { g__xchemnum_#1_sub_labels_prop }
+        \int_new:c  { g__xchemnum_#1_sub_labels_int }
+        % create associated property list:
+        \prop_new:c { g__xchemnum_#1_properties_prop }
+        % check if automatic label
+        \bool_if:NTF \l__xchemnum_automatic_label_bool
+          {
+            \int_gincr:N \g_xchemnum_main_label_int
+            \prop_gput:cnx { g__xchemnum_#1_properties_prop }
+              { label }
+              {
+                \l__xchemnum_pre_to_counter_format_tl
+                \__xchemnum_label_format:NnN
+                  \l__xchemnum_main_label_counter_format_tl
+                  { \g_xchemnum_main_label_int }
+                  \int_to_arabic:n
+              }
+            \prop_gput:cnV { g__xchemnum_#1_properties_prop }
+              { format }
+              \l__xchemnum_label_format_tl
+          }
+          {% whatever we do if the label is not created automatically
+          }
+      }
+  }
+
+% true if the label already has been registered or if the `register' boolean
+% is false.
+% #1: main ID
+\prg_new_conditional:Npnn \xchemnum_if_main_label:n #1 { p,T,F,TF }
+  {
+    \prop_if_in:NnTF \g_xchemnum_compounds_prop { #1 }
+      { \prg_return_true: }
+      {
+        \bool_if:NTF \l_xchemnum_register_label_bool
+          { \prg_return_false: }
+          { \prg_return_true: }
+      }
+  }
+
+% #1: main ID
+\cs_new_protected:Npn \xchemnum_register_main_label:n #1
+  {
+    \int_gincr:N \g_xchemnum_compound_int
+    \prop_gput:Nnx \g_xchemnum_compounds_prop
+      { #1 }
+      { \int_use:N \g_xchemnum_compound_int }
+  }
+
+% true if the label already has been written to the aux file or if the
+% `register' boolean is false.
+% #1: main ID
+\prg_new_conditional:Npnn \xchemnum_if_aux_label:n #1 { p,T,F,TF }
+  {
+    \prop_if_in:NnTF \g_xchemnum_compounds_aux_prop { #1 }
+      { \prg_return_true: }
+      {
+        \bool_if:NTF \l_xchemnum_register_label_bool
+          { \prg_return_false: }
+          { \prg_return_true: }
+      }
+  }
+
+% #1: options
+% #2: main ID
+\cs_new_protected:Npn \xchemnum_main_to_aux:nn #1#2
+  {
+    \xchemnum_if_aux_label:nF { #2 }
+      {
+        \iow_now:Nx \g_xchemnum_auxfile_iow
+          {
+            \xchemnum@cmpd{#2}
+              { \int_use:N \g_xchemnum_compound_int }
+              { \l__xchemnum_tmp_main_label_tl }
+              { \exp_not:n { #1 } }
+          }
+        \prop_gput:Nnn \g_xchemnum_compounds_aux_prop
+          { #2 } { }
+      }
+  }
+
+% #1: main ID
+% #2: internal ID
+% #3: label
+% #4: options
+\cs_new_protected:Npn \xchemnum@cmpd #1#2#3#4
+  { \cs_new:cpn { xchemnum_compound_#1: } { #3 } }
+
+% #1: main ID
+\cs_new_protected:Npn \xchemnum_read_main_label:n #1
+  {
+    % the temporary variables will contain \q_no_value if the property lists
+    % do not contain the property;
+    % the label of the compound:
+%    \tl_if_blank:VT \l__xchemnum_tmp_main_label_tl
+%      {
+        \prop_get:cnN { g__xchemnum_#1_properties_prop }
+          { label }
+          \l__xchemnum_tmp_main_label_tl
+%      }
+    % the format of the label:
+    \tl_if_blank:VT \l__xchemnum_tmp_format_tl
+      {
+        \prop_get:cnN { g__xchemnum_#1_properties_prop }
+          { format }
+          \l__xchemnum_tmp_format_tl
+      }
+    % code to put before:
+    \tl_if_blank:VT \l__xchemnum_tmp_pre_tl
+      {
+        \prop_get:NnN \l__xchemnum_label_properties_prop
+          { pre-label }
+          \l__xchemnum_tmp_pre_tl
+      }
+    % code to put after:
+    \tl_if_blank:VT \l__xchemnum_tmp_post_tl
+      {
+        \prop_get:NnN \l__xchemnum_label_properties_prop
+          { post-label }
+          \l__xchemnum_tmp_post_tl
+      }
+  }
+
+% #1: main ID
+\cs_new_protected:Npn \xchemnum_write_main_label:n #1
+  {
+    \quark_if_no_value:VTF \l__xchemnum_tmp_main_label_tl
+      {
+        \cs_if_exist:cTF { xchemnum_compound_#1: }
+          { \use:c { xchemnum_compound_#1: } }
+          { \xchemnum_missing_label:n { #1 } }
+      }
+      { \tl_use:N \l__xchemnum_tmp_main_label_tl }
+  }
+
+% #1: complete ID
+\cs_new_protected:Npn \xchemnum_missing_label:n #1
+  {
+    \msg_warning:nnn { xchemnum } { missing-label } { #1 }
+    \textbf{ !#1! }
+  }
+
+% ----------------------------------------------------------------------------
+% sub-label functions
+% #1: main ID
+% #2: sub ID
+\cs_new_protected:Npn \xchemnum_write_sub_label:nn #1#2
+  {
+    \quark_if_no_value:VTF \l__xchemnum_tmp_sub_label_tl
+      { \xchemnum_missing_label:n { #1 . #2 } }
+      { \tl_use:N \l__xchemnum_tmp_sub_label_tl }
+  }
+
+% #1: main ID
+% #2: sub ID
+\prg_new_conditional:Npnn \xchemnum_if_sub_label:nn #1#2 { T,F,TF }
+  {
+    \prop_if_in:NnTF \g_xchemnum_subcompounds_prop { #1:#2 }
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+
+% #1: main ID
+% #2: sub ID
+\cs_new_protected:Npn \xchemnum_register_sub_label:nn #1#2
+  {
+    \int_gincr:c { g__xchemnum_#1_sub_labels_int }
+    \prop_gput:Nnx \g_xchemnum_subcompounds_prop
+      { #1:#2 }
+      { \int_use:c { g__xchemnum_#1_sub_labels_int } }
+  }
+
+% ----------------------------------------------------------------------------
+% the main command
+% #1: main ID
+% #2: sub ID
+\cs_new_protected:Npn \xchemnum_write_label:nn #1#2
+  {
+    \bool_if:NT \l_xchemnum_write_label_bool
+      {
+        \group_begin:
+          \quark_if_no_value:VF \l__xchemnum_tmp_pre_tl
+            { \tl_use:N \l__xchemnum_tmp_pre_tl }
+          \quark_if_no_value:VTF \l__xchemnum_tmp_format_tl
+            { \tl_use:N \l__xchemnum_label_format_tl }
+            { \tl_use:N \l__xchemnum_tmp_format_tl }
+          \xchemnum_write_main_label:n { #1 }
+          \xchemnum_if_sub_label:nnT { #1 } { #2 }
+            { \xchemnum_write_sub_label:nn { #1 } { #2 } }
+          \quark_if_no_value:VF \l__xchemnum_tmp_post_tl
+            { \tl_use:N \l__xchemnum_tmp_post_tl }
+        \group_end:
+      }
+  }
+
+% #1: options
+% #2: complete ID
+\cs_new:Npn \xchemnum_single_cpmd:nn #1#2
+  {
+    \xchemnum_declare_main_label:n { #2 }
+    \xchemnum_read_main_label:n { #2 }
+    \xchemnum_main_to_aux:nn { #1 } { #2 }
+    % we'll need to split #2 into main/sub pair and then feed it to:
+    \xchemnum_write_label:nn { #2 } {  }
+  }
+
+% #1: options
+% #2: complete ID
+\cs_new_protected:Npn \xchemnum_cmpd:nn #1#2
+  {
+    \group_begin:
+      \keys_set:nn { xchemnum / local } { #1 }
+      \seq_set_split:NVn \l__xchemnum_tmpa_seq
+        \l__xchemnum_compound_separator_tl
+        { #2 }
+      \seq_clear:N \l__xchemnum_tmpb_seq
+      % can we sort the sequence according to the labels? the internal ID?
+      \seq_map_inline:Nn \l__xchemnum_tmpa_seq
+        {
+          \seq_put_right:Nn \l__xchemnum_tmpb_seq
+            { \xchemnum_single_cpmd:nn { #1 } { ##1 } }
+        }
+      % any pre-list-code
+      \seq_use:Nnnn \l__xchemnum_tmpb_seq
+        { \GetTranslation{xchemnum-sep-two} }
+        { \GetTranslation{xchemnum-sep-more} }
+        { \GetTranslation{xchemnum-sep-last-two} }
+      % any post-list-code
+    \group_end:
+  }
+
+\NewDocumentCommand \cmpd {st+om}
+  {
+    \IfBooleanTF { #1 }
+      { \bool_set_false:N \l_xchemnum_write_label_bool }
+      { \bool_set_true:N  \l_xchemnum_write_label_bool }
+    \IfBooleanTF { #2 }
+      { \bool_set_false:N \l_xchemnum_register_label_bool }
+      { \bool_set_true:N  \l_xchemnum_register_label_bool }
+    \IfNoValueTF { #3 }
+      { \xchemnum_cmpd:nn {    } { #4 } }
+      { \xchemnum_cmpd:nn { #3 } { #4 } }
+  }
+
+% ----------------------------------------------------------------------------
+% options that are to be applied with the \cmpd command:
+\keys_define:nn { xchemnum / local }
+  {
+    format              .tl_set:N = \l__xchemnum_label_format_tl ,
+    % the next one must be declared differently: the label is a _global_
+    % property!
+    label               .tl_set:N = \l__xchemnum_tmp_main_label_tl ,
+    main-counter-format .tl_set:N = \l__xchemnum_main_label_counter_format_tl ,
+    sub-counter-format  .tl_set:N = \l__xchemnum_sub_label_counter_format_tl ,
+    pre                 .tl_set:N = \l__xchemnum_tmp_pre_tl ,
+    post                .tl_set:N = \l__xchemnum_tmp_post_tl ,
+    sub-input-sep       .tl_set:N = \l__xchemnum_compound_separator_tl ,
+    list-input-sep      .tl_set:N = \l__xchemnum_sublabel_separator_tl
+  }
+
+% ----------------------------------------------------------------------------
+% language support:
+\DeclareTranslationFallback      {xchemnum-sep-two} {~and~}
+\DeclareTranslation {English}    {xchemnum-sep-two} {~and~}
+\DeclareTranslation {German}     {xchemnum-sep-two} {~und~}
+\DeclareTranslation {French}     {xchemnum-sep-two} {~et~}
+\DeclareTranslation {Spanish}    {xchemnum-sep-two} {~y~}
+\DeclareTranslation {Italian}    {xchemnum-sep-two} {~e~}
+\DeclareTranslation {Catalan}    {xchemnum-sep-two} {~i~}
+\DeclareTranslation {Portuguese} {xchemnum-sep-two} {~e~}
+\DeclareTranslation {Dutch}      {xchemnum-sep-two} {~en~}
+\DeclareTranslation {Danish}     {xchemnum-sep-two} {~og~}
+\DeclareTranslation {Swedish}    {xchemnum-sep-two} {~och~}
+\DeclareTranslation {Finnish}    {xchemnum-sep-two} {~ja~}
+\DeclareTranslation {Norwegian}  {xchemnum-sep-two} {~og~}
+
+\DeclareTranslationFallback      {xchemnum-sep-more} {,~}
+\DeclareTranslation {English}    {xchemnum-sep-more} {,~}
+\DeclareTranslation {German}     {xchemnum-sep-more} {,~}
+\DeclareTranslation {French}     {xchemnum-sep-more} {,~}
+\DeclareTranslation {Spanish}    {xchemnum-sep-more} {,~}
+\DeclareTranslation {Italian}    {xchemnum-sep-more} {,~}
+\DeclareTranslation {Catalan}    {xchemnum-sep-more} {,~}
+\DeclareTranslation {Portuguese} {xchemnum-sep-more} {,~}
+\DeclareTranslation {Dutch}      {xchemnum-sep-more} {,~}
+\DeclareTranslation {Danish}     {xchemnum-sep-more} {,~}
+\DeclareTranslation {Swedish}    {xchemnum-sep-more} {,~}
+\DeclareTranslation {Finnish}    {xchemnum-sep-more} {,~}
+\DeclareTranslation {Norwegian}  {xchemnum-sep-more} {,~}
+
+\DeclareTranslationFallback      {xchemnum-sep-last-two} {~and~}
+\DeclareTranslation {English}    {xchemnum-sep-last-two} {~and~}
+\DeclareTranslation {American}   {xchemnum-sep-last-two} {,~and~}
+\DeclareTranslation {German}     {xchemnum-sep-last-two} {~und~}
+\DeclareTranslation {French}     {xchemnum-sep-last-two} {~et~}
+\DeclareTranslation {Spanish}    {xchemnum-sep-last-two} {~y~}
+\DeclareTranslation {Italian}    {xchemnum-sep-last-two} {~e~}
+\DeclareTranslation {Catalan}    {xchemnum-sep-last-two} {~i~}
+\DeclareTranslation {Portuguese} {xchemnum-sep-last-two} {~e~}
+\DeclareTranslation {Dutch}      {xchemnum-sep-last-two} {~en~}
+\DeclareTranslation {Danish}     {xchemnum-sep-last-two} {~og~}
+\DeclareTranslation {Swedish}    {xchemnum-sep-last-two} {~och~}
+\DeclareTranslation {Finnish}    {xchemnum-sep-last-two} {~ja~}
+\DeclareTranslation {Norwegian}  {xchemnum-sep-last-two} {~og~}
+
+\tex_endinput:D
+% ----------------------------------------------------------------------------
+% TODO:
+- customization via options
+- reading of sublabels
+- initialization of compounds
+- resetting of the compound counter
+
