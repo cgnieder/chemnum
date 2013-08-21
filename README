@@ -1,12 +1,13 @@
+--------------------------------------------------------------------------
 xchemnum v0.0 2013/07/13
 
   a comprehensive approach for the numbering of chemical compounds
 
-contact@mychemistry.eu
-
-If you have any ideas, questions, suggestions or bugs to report,
-please feel free to contact me.
-
+--------------------------------------------------------------------------
+Clemens Niederberger
+Web:    https://bitbucket.org/cgnieder/chemmacros/
+E-Mail: contact@mychemistry.eu
+--------------------------------------------------------------------------
 Copyright 2013 Clemens Niederberger
 
 This work may be distributed and/or modified under the
@@ -20,8 +21,11 @@ version 2005/12/01 or later.
 This work has the LPPL maintenance status `maintained'.
 
 The Current Maintainer of this work is Clemens Niederberger.
-
+--------------------------------------------------------------------------
+If you have any ideas, questions, suggestions or bugs to report,
+please feel free to contact me.
+--------------------------------------------------------------------------
 This work consists of the files
   xchemnum.sty
   README
-
+--------------------------------------------------------------------------
