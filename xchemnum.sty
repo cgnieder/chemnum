@@ -8,12 +8,25 @@
 
 % ----------------------------------------------------------------------------
 % provide the package:
-\ProvidesExplPackage{xchemnum}{2013/07/13}{0.0}{chemnum revisited (CN)}
+\def\xchemnum@date{2013/08/22}
+\def\xchemnum@version{0.0}
+\def\xchemnum@info{chemnum revisited}
+\ProvidesExplPackage{xchemnum}
+  {\xchemnum@date}
+  {\xchemnum@version}
+  {\xchemnum@info\space (CN)}
 
 % ----------------------------------------------------------------------------
 % messages:
 \msg_new:nnn { xchemnum } { missing-label }
   { the key `#1' has no label associated \msg_line_context: }
+
+\msg_new:nnn { xchemnum } { erroneous-argument-combination }
+  {
+    Apparently~ you've~ used~ both~ the~ `*'~ and~ the~ `+'~
+    argument.~ This~ does~ not~ make~ sense.~ I'm~ doing~
+    nothing~ \msg_line_context:
+  }
 
 % ----------------------------------------------------------------------------
 % variants of kernel functions:
@@ -34,9 +47,16 @@
 % variables:
 \prop_new:N \l__xchemnum_label_formats_prop
 
+% the main label counter:
+% not very expl3 like but allows `cmpdmain' to be added to the \cl@<ounter>
+% list, i.e., it can e.g. be reset for every chapter:
+\newcounter{cmpdmain}
+% counter for internal reference if needed. Will be a unique number in order
+% of declaration:
 \int_new:N \g__xchemnum_main_int
 
 \seq_new:N \g__xchemnum_initiated_compounds_seq
+\seq_new:N \g__xchemnum_defined_compounds_seq
 
 \tl_new:N  \l__xchemnum_label_format_tl
 \tl_set:Nn \l__xchemnum_label_format_tl { \bfseries }
@@ -76,6 +96,24 @@
 \xchemnum_add_label_format:nN { greek  } \chemgreek_int_to_greek:n
 \xchemnum_add_label_format:nN { Greek  } \chemgreek_int_to_Greek:n
 
+% a user level command to add new formats
+\NewDocumentCommand \newcmpdlabelformat { mm }
+  { \xchemnum_add_label_format:nN { #1 } #2 }
+
+\keys_define:nn { xchemnum }
+  {
+    counter-within .code:n = \@addtoreset{cmpdmain}{#1} ,
+    counter-format .code:n =
+      \prop_if_in:NnTF \l__xchemnum_label_formats_prop { #1 }
+        {
+          \tl_set:Nn
+            \l__xchemnum_default_counter_representation_tl
+            { #1 }
+        }
+        {% TODO: error/warning
+        }
+  }
+
 % #1: tl that holds the chosen format
 % #2: int expr that holds the value
 % this command is expandable
@@ -89,22 +127,27 @@
 \cs_generate_variant:Nn \__xchemnum_label_format:Nn { NV , cV }
 
 % ----------------------------------------------------------------------------
-% auxiliary file:
+% auxiliary file -- we'll use the .aux file
+% first let's add dummy definitions so we can hopefully avoid error messages
+% if the `xchemnum' package is removed from the preamble
 \AtBeginDocument
   {
-    \file_if_exist:nT { \c_job_name_tl . cmpd }
-      { \file_input:n { \c_job_name_tl . cmpd } }
-    \iow_new:N   \g_xchemnum_auxfile_iow
-    \iow_open:Nn \g_xchemnum_auxfile_iow { ./ \c_job_name_tl . cmpd }
-    \iow_now:Nn  \g_xchemnum_auxfile_iow { \makeatletter }
-    \iow_now:Nn  \g_xchemnum_auxfile_iow { \providecommand\xchemnum@cmpd[8]{} }
+    \if@filesw
+      \iow_now:Nn \@auxout
+        {
+          \providecommand\xchemnum@cmpd[6]{} ^^J
+          \providecommand\xchemnum@check{}
+        }
+    \fi
   }
 
-\AtEndDocument {
-%   \iow_now:Nn  \g_xchemnum_auxfile_iow { \ExplSyntaxOff }
-%   \iow_now:Nn  \g_xchemnum_auxfile_iow { \makeatother }
-  \iow_close:N \g_xchemnum_auxfile_iow
-}
+% we use this one to trigger a LaTeX rerun warning -- to be precise the
+% ``Label(s) may have changed'' warning:
+\cs_new_protected:Npn \__xchemnum_rerun:
+  { \AtEndDocument { \def \xchemnum@check { \@tempswatrue } } }
+
+% add the rerun check at the end:
+\AtEndDocument { \if@filesw \iow_now:Nn \@auxout { \xchemnum@check } \fi }
 
 % ----------------------------------------------------------------------------
 % initiating new compounds
@@ -120,50 +163,48 @@
 % - counter for sublabels
 % - add to list of initiated compounds
 
-
+\cs_new_protected:Npn \xchemnum_initiate_compound:n #1
+  { \seq_gput_right:Nn \g__xchemnum_initiated_compounds_seq { #1 } }
 
 % #1: ID
-\cs_new_protected:Npn \xchemnum_initiate_compound:n #1
+\cs_new_protected:Npn \xchemnum_define_compound:n #1
   {
     \prop_if_exist:cF { g__xchemnum_compound_#1_prop }
       { \prop_new:c { g__xchemnum_compound_#1_prop } }
-    \seq_gput_right:Nn \g__xchemnum_initiated_compounds_seq { #1 }
+    \seq_gput_right:Nn \g__xchemnum_defined_compounds_seq { #1 }
     \int_gincr:N \g__xchemnum_main_int
+    \stepcounter{cmpdmain}
     \prop_gput:cnn { g__xchemnum_compound_#1_prop } { ID } { #1 }
-    \prop_gput:cnx { g__xchemnum_compound_#1_prop } { counter-value }
+    \prop_gput:cnx { g__xchemnum_compound_#1_prop } { number }
       { \int_use:N \g__xchemnum_main_int }
     \prop_gput:cnx { g__xchemnum_compound_#1_prop } { counter-representation }
       {
+        \tl_use:N \l__xchemnum_pre_counter_default_tl
         \__xchemnum_label_format:NV
-          \g__xchemnum_main_int
+          \c@cmpdmain % \g__xchemnum_main_int
           \l__xchemnum_default_counter_representation_tl
+        \tl_use:N \l__xchemnum_post_counter_default_tl
       }
-    \prop_gput:cnV { g__xchemnum_compound_#1_prop } { pre-counter-code  }
-      \l__xchemnum_pre_counter_default_tl
-    \prop_gput:cnV { g__xchemnum_compound_#1_prop } { post-counter-code }
-      \l__xchemnum_post_counter_default_tl
     \prop_gput:cnV { g__xchemnum_compound_#1_prop } { pre-label-code    }
       \l__xchemnum_pre_label_default_tl
     \prop_gput:cnV { g__xchemnum_compound_#1_prop } { post-label-code   }
       \l__xchemnum_post_label_default_tl
     \prop_gput:cnV { g__xchemnum_compound_#1_prop } { label-format }
       \l__xchemnum_label_format_tl
-    \__xchemnum_write_to_auxfile:nnnVVVVV { #1 }
+    \__xchemnum_write_to_auxfile:nnnVVV { #1 }
       { \int_use:N \g__xchemnum_main_int }
       {
+        \tl_use:N \l__xchemnum_pre_counter_default_tl
         \__xchemnum_label_format:NV
-          \g__xchemnum_main_int
+          \c@cmpdmain % \g__xchemnum_main_int
           \l__xchemnum_default_counter_representation_tl
+        \tl_use:N \l__xchemnum_post_counter_default_tl
       }
-      \l__xchemnum_pre_counter_default_tl
-      \l__xchemnum_post_counter_default_tl
       \l__xchemnum_pre_label_default_tl
       \l__xchemnum_post_label_default_tl
       \l__xchemnum_label_format_tl
-    \xchemnum_compound_update_property:nn { #1 } { counter-value }
+    \xchemnum_compound_update_property:nn { #1 } { number }
     \xchemnum_compound_update_property:nn { #1 } { counter-representation }
-    \xchemnum_compound_update_property:nn { #1 } { pre-counter-code }
-    \xchemnum_compound_update_property:nn { #1 } { post-counter-code }
     \xchemnum_compound_update_property:nn { #1 } { pre-label-code }
     \xchemnum_compound_update_property:nn { #1 } { post-label-code }
     \xchemnum_compound_update_property:nn { #1 } { label-format }
@@ -174,6 +215,15 @@
   { T,F,TF }
   {
     \seq_if_in:NnTF \g__xchemnum_initiated_compounds_seq { #1 }
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+
+% #1: ID
+\prg_new_protected_conditional:Npnn \xchemnum_compound_if_defined:n #1
+  { T,F,TF }
+  {
+    \seq_if_in:NnTF \g__xchemnum_defined_compounds_seq { #1 }
       { \prg_return_true: }
       { \prg_return_false: }
   }
@@ -207,6 +257,12 @@
       { #3 }
   }
 
+\cs_new:Npn \xchemnum_expandable_get_compound_property:nn #1#2
+  { \prop_get:cn { g__xchemnum_compound_#1_prop } { #2 } }
+
+\DeclareExpandableDocumentCommand \cmpdproperty { mm }
+  { \xchemnum_expandable_get_compound_property:nn { #1 } { #2 } }
+
 % ----------------------------------------------------------------------------
 % initiating subcompounds:
 
@@ -237,30 +293,30 @@
 % #1: ID
 % #2: counter value
 % #3: counter representation
-% #4: pre counter
-% #5: post counter
-% #6: pre label
-% #7: post label
-% #8: label format
-\cs_new_protected:Npn \__xchemnum_write_to_auxfile:nnnnnnnn #1#2#3#4#5#6#7#8
+% #4: pre label
+% #5: post label
+% #6: label format
+\cs_new_protected:Npn \__xchemnum_write_to_auxfile:nnnnnn #1#2#3#4#5#6
   {
-    \iow_now:Nx  \g_xchemnum_auxfile_iow
-      {
-        \exp_not:N \xchemnum@cmpd{#1}{#2}{#3}
-        \exp_not:n { {#4}{#5}{#6}{#7}{#8} }
-      }
+    \if@filesw
+      \iow_now:Nx \@auxout
+        {
+          \exp_not:N \xchemnum@cmpd{#1}{#2}{#3}
+          \exp_not:n { {#4}{#5}{#6} }
+        }
+    \fi
   }
-\cs_generate_variant:Nn \__xchemnum_write_to_auxfile:nnnnnnnn { nnnVVVVV }
+\cs_generate_variant:Nn \__xchemnum_write_to_auxfile:nnnnnn { nnnVVV }
 
 % #1: ID
 % #2: counter value
 % #3: counter representation
-\cs_new_protected:Npn \xchemnum@cmpd #1#2#3#4#5#6#7#8
+\cs_new_protected:Npn \xchemnum@cmpd #1#2#3#4#5#6
   {
     \prop_if_exist:cF { g__xchemnum_compound_#1_prop }
       { \prop_new:c { g__xchemnum_compound_#1_prop } }
     \prop_gput:cnn { g__xchemnum_compound_#1_prop }
-      { previous-counter-value } { #2 }
+      { previous-number } { #2 }
     \prop_gput:cnn { g__xchemnum_compound_#1_prop }
       { previous-counter-representation } { #3 }
   }
@@ -272,42 +328,59 @@
 % #2: ID
 \cs_new_protected:Npn \xchemnum_declare_compound:nn #1#2
   {% TODO: we need to test if a compound /has/ to be initiated!
+    \keys_set:nn { xchemnum } { #1 }
     \xchemnum_compound_if_initiated:nF { #2 }
       { \xchemnum_initiate_compound:n { #2 } }
+    \xchemnum_compound_if_defined:nF { #2 }
+      { \xchemnum_define_compound:n { #2 } }
   }
 
 % actively write a compound:
 % #1: ID
 \cs_new_protected:Npn \xchemnum_compound_write:n #1
   {
+    \xchemnum_get_compound_property:nn { #1 } { pre-label-code    }
     \group_begin:
       \xchemnum_get_compound_property:nn { #1 } { label-format }
-      \xchemnum_get_compound_property:nn { #1 } { pre-label-code    }
-      \xchemnum_get_compound_property:nn { #1 } { pre-counter-code  }
       \xchemnum_get_compound_property:nn { #1 } { counter-representation }
-      \xchemnum_get_compound_property:nn { #1 } { post-counter-code }
-      \xchemnum_get_compound_property:nn { #1 } { post-label-code   }
     \group_end:
+    \xchemnum_get_compound_property:nn { #1 } { post-label-code   }
+  }
+
+% this is only provided for use in PDF strings:
+\cs_new:Npn \xchemnum_expandable_compound_write:n #1
+  {
+    \xchemnum_expandable_get_compound_property:nn { #1 } { pre-label-code }
+    \xchemnum_expandable_get_compound_property:nn { #1 } { counter-representation }
+    \xchemnum_expandable_get_compound_property:nn { #1 } { post-label-code }
   }
 
 % read and write saved values:
 % #1: ID
 \cs_new_protected:Npn \xchemnum_compound_read:n #1
   {
+    \xchemnum_get_compound_property_or:nnn { #1 }
+      { previous-pre-label-code } { }
     \group_begin:
       \xchemnum_get_compound_property_or:nnn { #1 }
         { previous-label-format } { }
       \xchemnum_get_compound_property_or:nnn { #1 }
-        { previous-pre-label-code } { }
-      \xchemnum_get_compound_property_or:nnn { #1 }
-        { previous-pre-counter-code } { }
-      \xchemnum_get_compound_property_or:nnn { #1 }
-        { previous-counter-representation } { ?? }
-      \xchemnum_get_compound_property_or:nnn { #1 }
-        { previous-post-counter-code } { }
-      \xchemnum_get_compound_property_or:nnn { #1 }
-        { previous-post-label-code   } { }
+        { previous-counter-representation } { ?? \__xchemnum_rerun: }
     \group_end:
+    \xchemnum_get_compound_property_or:nnn { #1 }
+      { previous-post-label-code   } { }
+    
+  }
+
+% this is only provided for use in PDF strings:
+\cs_new:Npn \xchemnum_expandable_compound_read:n #1
+  {
+    \xchemnum_expandable_get_compound_property:nn { #1 }
+      { previous-pre-label-code }
+    \xchemnum_expandable_get_compound_property:nn { #1 }
+      { previous-counter-representation }
+    \xchemnum_expandable_get_compound_property:nn { #1 }
+      { previous-post-label-code }
   }
 
 % write a label from the entries of \cmpd:
@@ -318,9 +391,11 @@
 \cs_new_protected:Npn \xchemnum_single_compound:nnnn #1#2#3#4
   {
     \bool_if:NT #1 { \@bsphack }
-    \xchemnum_split_sub_from_main:Vnnnn
-      \l__xchemnum_compound_separator_tl
-      { #1 } { #2 } { #3 } { #4 }
+    \group_begin:
+      \xchemnum_split_sub_from_main:Vnnnn
+        \l__xchemnum_compound_separator_tl
+        { #1 } { #2 } { #3 } { #4 }
+    \group_end:
     \bool_if:NT { #1 } { \@esphack }
   }
 
@@ -355,15 +430,15 @@
 \cs_new_protected:Npn \xchemnum_write_main:nnnn #1#2#3#4
   {
     \bool_if:NTF #2
-      { \xchemnum_compound_read:n { #4 } }
       {
-        \bool_if:NTF { #1 }
-          { %TODO error/warning: wrong argument combination
-          }
-          {
-            \xchemnum_declare_compound:nn { #3 } { #4 }
-            \xchemnum_compound_write:n { #4 }
-          }
+        \xchemnum_compound_read:n { #4 }
+        \bool_if:NT #1
+          { \msg_error:nn { xchemnum } { erroneous-argument-combination } }
+      }
+      {
+        \xchemnum_declare_compound:nn { #3 } { #4 }
+        \bool_if:NF #1
+          { \xchemnum_compound_write:n { #4 } }
       }
   }
 
@@ -396,6 +471,10 @@
 % the user level version of the main command:
 \NewDocumentCommand \cmpd { st+O{}m  }
   { \xchemnum_cmpd:nnnn { #1 } { #2 } { #3 } { #4 } }
+
+% TODO: this command should be able to read at least /one/ sublabel
+\DeclareExpandableDocumentCommand \cmpdplain { m }
+  { \xchemnum_expandable_compound_read:n { #1 } }
 
 % ----------------------------------------------------------------------------
 % language support:
@@ -442,6 +521,10 @@
 \DeclareTranslation {Finnish}    {xchemnum-sep-last-two} {~ja~}
 \DeclareTranslation {Norwegian}  {xchemnum-sep-last-two} {~og~}
 
+% ----------------------------------------------------------------------------
+\NewDocumentCommand \cmpdsetup { m }
+  { \keys_set:nn { xchemnum } { #1 } }
+
 \tex_endinput:D
 % ----------------------------------------------------------------------------
 % TODO:
@@ -450,4 +533,10 @@
   - local to \cmpd
   - general default settings
 - sorting facilities
+
+% new features in xchemnum:
+- \cmpdplain{<id>} => reads label and writes it expandably without
+  formatting.  It is not able to parse a list.  Its sole purpose is usage in
+  pdfstrings (cf. \texorpdfstring{<tex>}{<pdfstring>}).
+- \cmpdproperty
 
