@@ -1,0 +1,38 @@
+% ----------------------------------------------------------------------------
+\def\chemnum@date{2013/12/11}
+\def\chemnum@version{1.0}
+\def\chemnum@info{a comprehensive approach for the numbering of chemical compounds}
+
+\RequirePackage{expl3}[2013/07/14]
+\RequirePackage{xparse,l3keys2e}
+
+% ----------------------------------------------------------------------------
+% provide the package:
+\ProvidesExplPackage{chemnum}
+  {\chemnum@date}
+  {\chemnum@version}
+  {\chemnum@info\space (CN)}
+
+\int_new:N  \l__chemnum_version_int
+\int_set:Nn \l__chemnum_version_int { 1 }
+
+\msg_new:nnn {chemnum} {unknown-version}
+  { The~ version~ #1~ is~ unknown.~ Loading~ version~ 1~ \msg_line_context: }
+
+\keys_define:nn {chemnum}
+  { version .int_set:N = \l__chemnum_version_int }
+
+\ProcessKeysOptions{chemnum}
+
+\int_case:nnF { \l__chemnum_version_int }
+  {
+    {0} { \RequirePackage{chemnum0} }
+    {1} { \RequirePackage{chemnum1} }
+  }
+  {
+    \msg_warning:nnn {chemnum} {unknown-version}
+      { \int_use:N \l__chemnum_version_int }
+    \RequirePackage{chemnum1}
+  }
+
+\endinput

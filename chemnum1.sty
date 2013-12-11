@@ -1,0 +1,1435 @@
+% ----------------------------------------------------------------------------
+% required packages:
+% language support:
+\RequirePackage{translations}[2013/07/12]
+% greek alphabet for the labels matching to chemmacros' selection:
+\RequirePackage{chemgreek}[2013/07/13]
+\RequirePackage{psfrag}
+
+% ----------------------------------------------------------------------------
+% provide the package:
+\ProvidesExplPackage{chemnum1}
+  {\chemnum@date}
+  {\chemnum@version}
+  {\chemnum@info\space (CN)}
+
+% ----------------------------------------------------------------------------
+% messages:
+\msg_new:nnn {chemnum} {missing-label}
+  { The~ key~ `#1'~ has~ no~ label~ associated~ \msg_line_context: }
+
+\msg_new:nnn {chemnum} {erroneous-argument-combination}
+  {
+    Apparently~ you've~ used~ both~ the~ `*'~ and~ the~ `+'~
+    argument.~ This~ does~ not~ make~ sense.~ I'm~ doing~
+    nothing~ \msg_line_context:
+  }
+
+\msg_new:nnn {chemnum} {unknown-counter-format}
+  {
+    I~ do~ not~ know~ the~ counter~ format~ `#1'.~  I'll~ use~ `arabic'~
+    instead~ \msg_line_context:
+  }
+
+\msg_new:nnn {chemnum} {compound-not-initiated}
+  { The~ compound~ `#1'~ has~ not~ been~ initiated~ \msg_line_context: }
+
+\msg_new:nnn {chemnum} {subcompound-not-initiated}
+  {
+    The~ compound~ `#1\l__chemnum_compound_separator_tl #2'~ has~ not~ been~
+    initiated~ \msg_line_context:
+  }
+
+\msg_new:nnn {chemnum} {log-compound-silent}
+  {
+    ................................................. \\
+    . ~ \msg_info_text:n {chemnum}: ~
+      defined~ new~ compound~ `#1'~with~output~
+      \chemnum_expandable_get_compound_property:nn {#1}
+        {counter-representation} . \\
+    .................................................
+  }
+
+\msg_new:nnn {chemnum} {log-compound-verbose}
+  {
+    ................................................. \\
+    . ~ \msg_info_text:n {chemnum}: ~ defined~ new~ compound: \\
+    . \c_space_tl \c_space_tl \c_space_tl
+    ID ~=~ #1 \\
+    . \c_space_tl \c_space_tl \c_space_tl
+    internal~ number ~=~
+    \chemnum_expandable_get_compound_property:nn {#1} {number} \\
+    . \c_space_tl \c_space_tl \c_space_tl
+    label ~=~
+    \chemnum_expandable_get_compound_property:nn {#1}
+      {counter-representation}  \\
+    . \c_space_tl \c_space_tl \c_space_tl
+    pre~ label~ code ~=~
+    \chemnum_expandable_get_compound_property:nn {#1}
+      {pre-label-code}  \\
+    . \c_space_tl \c_space_tl \c_space_tl
+    post~ label~ code ~=~
+    \chemnum_expandable_get_compound_property:nn {#1}
+      {post-label-code}  \\
+    . \c_space_tl \c_space_tl \c_space_tl
+    format ~=~
+    \chemnum_expandable_get_compound_property:nn {#1}
+      {label-format}  \\
+    .................................................
+  }
+
+\msg_new:nnn {chemnum} {log-subcompound-silent}
+  {
+    ................................................. \\
+    . ~ \msg_info_text:n {chemnum}: ~
+      defined~ new~ subcompound~ `#2'~ with~ output~
+      \chemnum_expandable_get_subcompound_property:nnn {#1} {#2}
+        {counter-representation} \\
+    . ~ belonging~ to~ the~ main~ compound~ `#1'. \\
+    .................................................
+  }
+
+\msg_new:nnn {chemnum} {log-subcompound-verbose}
+  {
+    ................................................. \\
+    . ~ \msg_info_text:n {chemnum}: ~ defined~ new~ subcompound: \\
+    . \c_space_tl \c_space_tl \c_space_tl
+    ID ~=~ #2 \\
+    . \c_space_tl \c_space_tl \c_space_tl
+    main~ compound ~=~
+    \chemnum_expandable_get_subcompound_property:nnn {#1} {#2}
+      {main-compound} \\
+    . \c_space_tl \c_space_tl \c_space_tl
+    internal~ number ~=~
+    \chemnum_expandable_get_subcompound_property:nnn {#1} {#2} {number} \\
+    . \c_space_tl \c_space_tl \c_space_tl
+    label ~=~
+    \chemnum_expandable_get_subcompound_property:nnn {#1} {#2}
+      {counter-representation}  \\
+    .................................................
+  }
+
+\msg_new:nnn { chemnum } { deprecated-command }
+  {
+    The~command~`~\token_to_str:N #1 \c_space_tl'~is~deprecated.~
+    Use~`~\token_to_str:N #2 \c_space_tl'~instead.
+  }
+
+% ----------------------------------------------------------------------------
+% deprecated command names:
+%   #1: old name
+%   #2: new name
+\cs_new_protected:Npn \chemnum_deprecated_command:NN #1#2
+  {
+    \cs_new:Npn #1
+      {
+        \msg_warning:nnnn { chemnum } { deprecated-command }
+          { #1 } { #2 }
+        #2
+      }
+  }
+
+% ----------------------------------------------------------------------------
+% variants of kernel functions:
+\cs_generate_variant:Nn \prop_gput:Nnn         { Nnx , cnx , cnV }
+\cs_generate_variant:Nn \quark_if_no_value:nTF { V }
+\cs_generate_variant:Nn \quark_if_no_value:nF  { V }
+\cs_generate_variant:Nn \seq_set_split:Nnn     { NV }
+\cs_generate_variant:Nn \seq_use:Nnnn          { NVVV }
+\cs_generate_variant:Nn \tl_if_eq:nnF          { Vx }
+
+% ----------------------------------------------------------------------------
+% temporary variables:
+\tl_new:N \l__chemnum_tmpa_tl
+\tl_new:N \l__chemnum_tmpb_tl
+
+\seq_new:N \l__chemnum_tmpa_seq
+\seq_new:N \l__chemnum_tmpb_seq
+\seq_new:N \l__chemnum_tmpc_seq
+\seq_new:N \l__chemnum_tmpd_seq
+\seq_new:N \l__chemnum_tmpe_seq
+
+\int_new:N \l__chemnum_tmpa_int
+\int_new:N \l__chemnum_tmpb_int
+\int_new:N \l__chemnum_tmpc_int
+
+% ----------------------------------------------------------------------------
+% variables:
+\prop_new:N \l__chemnum_label_formats_prop
+
+% the main label counter:
+% not very expl3 like but allows `cmpdmain' to be added to the \cl@<ounter>
+% list, i.e., it can e.g. be reset for every chapter:
+\newcounter{cmpdmain}
+% counter for internal reference if needed. Will be a unique number in order
+% of declaration:
+\int_new:N \g__chemnum_main_int
+\int_new:N \l__chemnum_compound_replace_int
+
+\seq_new:N \g__chemnum_initiated_compounds_seq
+\seq_new:N \g__chemnum_defined_compounds_seq
+
+\tl_new:N     \l__chemnum_label_format_tl
+\tl_set:Nn    \l__chemnum_label_format_tl {\bfseries}
+\tl_new:N     \l__chemnum_local_label_format_tl
+\tl_set_eq:NN \l__chemnum_local_label_format_tl \l__chemnum_label_format_tl
+\tl_new:N     \l__chemnum_default_counter_representation_tl
+\tl_set:Nn    \l__chemnum_default_counter_representation_tl {arabic}
+\tl_new:N     \l__chemnum_default_subcounter_representation_tl
+\tl_set:Nn    \l__chemnum_default_subcounter_representation_tl {alph}
+\tl_new:N     \l__chemnum_pre_counter_default_tl
+\tl_new:N     \l__chemnum_post_counter_default_tl
+\tl_new:N     \l__chemnum_pre_label_default_tl
+\tl_new:N     \l__chemnum_post_label_default_tl
+\tl_new:N     \l__chemnum_main_separator_tl
+\tl_set:Nn    \l__chemnum_main_separator_tl {,}
+\tl_new:N     \l__chemnum_compound_separator_tl
+\tl_set:Nn    \l__chemnum_compound_separator_tl {.}
+
+\tl_new:N  \l__chemnum_sep_list_two_tl
+\tl_set:Nn \l__chemnum_sep_list_two_tl { \GetTranslation {chemnum-sep-two} }
+\tl_new:N  \l__chemnum_sep_list_more_tl
+\tl_set:Nn \l__chemnum_sep_list_more_tl {,~}
+\tl_new:N  \l__chemnum_sep_list_last_two_tl
+\tl_set:Nn \l__chemnum_sep_list_last_two_tl
+  { \GetTranslation { chemnum-sep-last-two } }
+
+\tl_new:N  \l__chemnum_sep_sublist_two_tl
+\tl_set:Nn \l__chemnum_sep_sublist_two_tl {,}
+\tl_new:N  \l__chemnum_sep_sublist_more_tl
+\tl_set:Nn \l__chemnum_sep_sublist_more_tl {,}
+\tl_new:N  \l__chemnum_sep_sublist_last_two_tl
+\tl_set:Nn \l__chemnum_sep_sublist_last_two_tl {,}
+\tl_new:N  \l__chemnum_sep_sublist_range_tl
+\tl_set:Nn \l__chemnum_sep_sublist_range_tl {--}
+
+\tl_new:N  \l__chemnum_compound_replace_tl
+\tl_new:N  \l__chemnum_compound_replace_format_tl
+\tl_new:N  \l__chemnum_compound_replace_local_format_tl
+\tl_set:Nn \l__chemnum_compound_replace_format_tl { \sffamily }
+\tl_new:N  \l__chemnum_compound_replace_tag_tl
+\tl_set:Nn \l__chemnum_compound_replace_tag_tl { TMP }
+\tl_new:N  \l__chemnum_psfrag_texpos_tl
+\tl_new:N  \l__chemnum_psfrag_local_texpos_tl
+\tl_set:Nn \l__chemnum_psfrag_texpos_tl { b }
+\tl_new:N  \l__chemnum_psfrag_pspos_tl
+\tl_new:N  \l__chemnum_psfrag_local_pspos_tl
+\tl_set:Nn \l__chemnum_psfrag_pspos_tl { b }
+
+\bool_new:N \l__chemnum_compound_local_bool
+\bool_new:N \g__chemnum_initiate_bool
+\bool_new:N \g__chemnum_initiate_strict_bool
+\bool_new:N \g__chemnum_initiate_sub_bool
+\bool_new:N \l__chemnum_log_bool
+\bool_set_true:N \l__chemnum_log_bool
+\bool_new:N \l__chemnum_log_verbose_bool
+\bool_new:N \l__chemnum_compress_subcompounds_bool
+\bool_set_true:N \l__chemnum_compress_subcompounds_bool
+\bool_new:N \l__chemnum_sub_only_bool
+\bool_new:N \l__chemnum_sub_all_bool
+\bool_new:N \l__chemnum_show_def_bool
+\bool_new:N \l__chemnum_show_ref_bool
+\bool_new:N \l__chemnum_compound_replace_auto_bool
+\bool_set_true:N \l__chemnum_compound_replace_auto_bool
+\bool_new:N \l__chemnum_compound_replace_auto_this_bool
+\bool_set_true:N \l__chemnum_compound_replace_auto_this_bool
+\bool_new:N \l__chemnum_replace_local_bool
+
+% ----------------------------------------------------------------------------
+% label formats:
+
+% #1: name
+% #2: function with 1 n-type argument that takes an integer
+\cs_new_protected:Npn \chemnum_add_label_format:nN #1#2
+  {
+    \cs_if_exist:cTF { __chemnum_#1_label_formtat:n }
+      { \cs_set:cpn { __chemnum_#1_label_format:n } ##1 { #2 { ##1 } } }
+      { \cs_new:cpn { __chemnum_#1_label_format:n } ##1 { #2 { ##1 } } }
+    \prop_put:Nnx \l__chemnum_label_formats_prop {#1}
+      { \exp_not:c { __chemnum_#1_label_format:n } }
+  }
+
+% a user level command to add new formats
+\NewDocumentCommand \newcmpdlabelformat { mm }
+  { \chemnum_add_label_format:nN {#1} #2 }
+
+\newcmpdlabelformat {arabic} \int_to_arabic:n
+\newcmpdlabelformat {alph  } \int_to_alph:n
+\newcmpdlabelformat {Alph  } \int_to_Alph:n
+\newcmpdlabelformat {roman } \int_to_roman:n
+\newcmpdlabelformat {Roman } \int_to_Roman:n
+\newcmpdlabelformat {greek } \chemgreek_int_to_greek:n
+\newcmpdlabelformat {Greek } \chemgreek_int_to_Greek:n
+
+% ----------------------------------------------------------------------------
+%%% options
+% options assigned to group `compound' are only setable with the \cmpd command
+% except they're _also_ asigned to the `global' group; likewise options that
+% are assigned to the group `global' can only be set with \setchemnum except
+% they're also assigned to the `compound' group.
+\keys_define:nn {chemnum}
+  {
+    compound              .bool_set:N = \l__chemnum_compound_local_bool ,
+    compound              .groups:n   = {compound} ,
+    % counter:
+    counter-within        .code:n     = \@addtoreset{cmpdmain}{#1} ,
+    counter-within        .groups:n   = {global} ,
+    counter-format        .code:n     =
+      \prop_if_in:NnTF \l__chemnum_label_formats_prop {#1}
+        {
+          \tl_set:Nn
+            \l__chemnum_default_counter_representation_tl
+            {#1}
+        }
+        {
+          \msg_warning:nnn {chemnum} {unknown-counter-format} {#1}
+          \tl_set:Nn
+            \l__chemnum_default_counter_representation_tl
+            {arabic}
+        } ,
+    counter-format        .groups:n   = {compound} ,
+    sub-counter-format    .code:n     =
+      \prop_if_in:NnTF \l__chemnum_label_formats_prop {#1}
+        {
+          \tl_set:Nn
+            \l__chemnum_default_subcounter_representation_tl
+            {#1}
+        }
+        {
+          \msg_warning:nnn {chemnum} {unknown-counter-format} {#1}
+          \tl_set:Nn
+            \l__chemnum_default_subcounter_representation_tl
+            {arabic}
+        } ,
+    sub-counter-format    .groups:n   = {compound} ,
+    % label:
+    pre-label-code        .tl_set:N   = \l__chemnum_pre_counter_default_tl ,
+    pre-label-code        .groups:n   = {compound} ,
+    post-label-code       .tl_set:N   = \l__chemnum_post_counter_default_tl ,
+    post-label-code       .groups:n   = {compound} ,
+    main-sub-sep          .tl_set:N   = \l__chemnum_compound_separator_tl ,
+    main-sub-sep          .groups:n   = {global} ,
+    list-label-sep        .tl_set:N   = \l__chemnum_main_separator_tl ,
+    list-label-sep        .groups:n   = {global} ,
+    format                .code:n     =
+      \bool_if:NTF \l__chemnum_compound_local_bool
+        { \tl_set:Nn \l__chemnum_local_label_format_tl {#1} }
+        { \tl_set:Nn \l__chemnum_label_format_tl {#1} } ,
+    format                .groups:n   = {compound,global} ,
+    sub-only              .bool_set:N = \l__chemnum_sub_only_bool ,
+    sub-only              .groups:n   = {compound} ,
+    sub-all               .bool_set:N = \l__chemnum_sub_all_bool ,
+    sub-all               .groups:n   = {compound} ,
+    compress              .bool_set:N =
+      \l__chemnum_compress_subcompounds_bool ,
+    compress              .groups:n   = {compound,global} ,
+    % initiation:
+    init                  .choice: ,
+    init / true           .code:n     =
+      \bool_set_true:N \g__chemnum_initiate_bool
+      \bool_set_true:N \g__chemnum_initiate_sub_bool
+      \bool_set_false:N \g__chemnum_initiate_strict_bool ,
+    init / main           .code:n     =
+      \bool_set_true:N \g__chemnum_initiate_bool
+      \bool_set_false:N \g__chemnum_initiate_sub_bool
+      \bool_set_false:N \g__chemnum_initiate_strict_bool ,
+    init / false          .code:n     =
+      \bool_set_false:N \g__chemnum_initiate_bool
+      \bool_set_false:N \g__chemnum_initiate_sub_bool
+      \bool_set_false:N \g__chemnum_initiate_strict_bool ,
+    init / strict         .code:n     =
+      \bool_set_true:N \g__chemnum_initiate_bool
+      \bool_set_true:N \g__chemnum_initiate_sub_bool
+      \bool_set_true:N \g__chemnum_initiate_strict_bool ,
+    init / main-strict    .code:n     =
+      \bool_set_true:N \g__chemnum_initiate_bool
+      \bool_set_false:N \g__chemnum_initiate_sub_bool
+      \bool_set_true:N \g__chemnum_initiate_strict_bool ,
+    init                  .default:n  = true ,
+    init                  .groups:n   = {global} ,
+    % list processing:
+    list-sep-two          .tl_set:N   = \l__chemnum_sep_list_two_tl ,
+    list-sep-two          .groups:n   = {compound,global} ,
+    list-sep-more         .tl_set:N   = \l__chemnum_sep_list_more_tl ,
+    list-sep-more         .groups:n   = {compound,global} ,
+    list-sep-last-two     .tl_set:N   = \l__chemnum_sep_list_last_two_tl ,
+    list-sep-last-two     .groups:n   = {compound,global} ,
+    sub-list-sep-two      .tl_set:N   = \l__chemnum_sep_sublist_two_tl ,
+    sub-list-sep-two      .groups:n   = {compound,global} ,
+    sub-list-sep-more     .tl_set:N   = \l__chemnum_sep_sublist_more_tl ,
+    sub-list-sep-more     .groups:n   = {compound,global} ,
+    sub-list-sep-last-two .tl_set:N   = \l__chemnum_sep_sublist_last_two_tl ,
+    sub-list-sep-last-two .groups:n   = {compound,global} ,
+    sub-list-sep-range    .tl_set:N   = \l__chemnum_sep_sublist_range_tl ,
+    sub-list-sep-range    .groups:n   = {compound,global} ,
+    % logging and other information:
+    log                   .choice: ,
+    log / true            .code:n     =
+      \bool_set_true:N \l__chemnum_log_bool
+      \bool_set_false:N \l__chemnum_log_verbose_bool ,
+    log / silent          .code:n     =
+      \bool_set_true:N \l__chemnum_log_bool
+      \bool_set_false:N \l__chemnum_log_verbose_bool ,
+    log / false           .code:n     =
+      \bool_set_false:N \l__chemnum_log_bool
+      \bool_set_false:N \l__chemnum_log_verbose_bool ,
+    log / verbose         .code:n     =
+      \bool_set_true:N \l__chemnum_log_bool
+      \bool_set_true:N \l__chemnum_log_verbose_bool ,
+    log                   .default:n  = true ,
+    log                   .groups:n   = {global} ,
+    show-keys             .choice: ,
+    show-keys / true      .code:n     =
+      \bool_set_true:N \l__chemnum_show_def_bool
+      \bool_set_true:N \l__chemnum_show_ref_bool ,
+    show-keys / false     .code:n     =
+      \bool_set_false:N \l__chemnum_show_def_bool
+      \bool_set_false:N \l__chemnum_show_ref_bool ,
+    show-keys / def       .code:n     =
+      \bool_set_true:N \l__chemnum_show_def_bool
+      \bool_set_false:N \l__chemnum_show_ref_bool ,
+    show-keys / ref       .code:n     =
+      \bool_set_false:N \l__chemnum_show_def_bool
+      \bool_set_true:N \l__chemnum_show_ref_bool ,
+    show-keys             .default:n  = true ,
+    show-keys             .groups:n   = {global} ,
+    replace               .bool_set:N = \l__chemnum_replace_local_bool ,
+    replace               .groups:n   = {replace} ,
+    replace-auto          .bool_set:N = \l__chemnum_compound_replace_auto_bool ,
+    replace-tag           .tl_set:N   = \l__chemnum_compound_replace_tag_tl ,
+    replace-tag           .groups:n   = {global} ,
+    tag                   .code:n     =
+      \tl_set:Nn \l__chemnum_compound_replace_tag_tl {#1}
+      \bool_set_false:N \l__chemnum_compound_replace_auto_this_bool ,
+    tag                   .groups:n   = {replace} ,
+    replace-style         .tl_set:N   = \l__chemnum_compound_replace_format_tl ,
+    replace-style         .groups:n   = {global} ,
+    style                 .code:n     =
+      \tl_set:Nn \l__chemnum_compound_replace_local_format_tl {#1}
+      \bool_set_true:N \l__chemnum_replace_local_bool ,
+    style                 .groups:n   = {replace} ,
+    replace-pos           .code:n     = \__chemnum_set_psfrag_pos:nn #1 ,
+    replace-pos           .groups:n   = {global} ,
+    pos                   .code:n     =
+      \bool_set_true:N \l__chemnum_replace_local_bool
+      \__chemnum_set_psfrag_local_pos:nn #1 ,
+    pos                   .groups:n   = {replace}
+  }
+
+% ----------------------------------------------------------------------------
+% #1: int variable that holds the value
+% #2: the chosen format
+% this command is expandable
+\cs_new:Npn \__chemnum_label_format:Nn #1#2
+  {
+    \prop_if_in:NnTF \l__chemnum_label_formats_prop {#2}
+      { \use:c { __chemnum_#2_label_format:n } {#1} }
+      { \__chemnum_arabic_label_format:n {#1} }
+  }
+\cs_generate_variant:Nn \__chemnum_label_format:Nn { NV , cV }
+
+% ----------------------------------------------------------------------------
+% auxiliary file -- we'll use the .aux file
+% first let's add dummy definitions so we can hopefully avoid error messages
+% if the `chemnum' package is removed from the preamble
+\AtBeginDocument
+  {
+    \if@filesw
+      \iow_now:Nn \@auxout
+        {
+          \providecommand\chemnum@cmpd[6]{} ^^J
+          \providecommand\chemnum@subcmpd[4]{} ^^J
+          \providecommand\chemnum@check{}
+        }
+    \fi
+  }
+
+% we use this one to trigger a LaTeX rerun warning -- to be precise the
+% ``Label(s) may have changed'' warning:
+\cs_new_protected:Npn \__chemnum_rerun:
+  { \AtEndDocument { \def \chemnum@check { \@tempswatrue } } }
+
+% add the rerun check at the end:
+\AtEndDocument { \if@filesw \iow_now:Nn \@auxout { \chemnum@check } \fi }
+
+% ----------------------------------------------------------------------------
+% initiating new compounds
+% - property list that holds
+%   - ID
+%   - counter value
+%   - counter represetation
+%   - pre-counter-code
+%   - post-counter-code
+%   - pre-label-code
+%   - post-label-code
+%   - formatting code
+% - add to list of initiated compounds
+
+\cs_new_protected:Npn \chemnum_initiate_compound:n #1
+  { \seq_gput_right:Nn \g__chemnum_initiated_compounds_seq {#1} }
+
+% #1: ID
+\cs_new_protected:Npn \chemnum_define_compound:n #1
+  {
+    \prop_if_exist:cF { g__chemnum_compound_#1_prop }
+      { \prop_new:c { g__chemnum_compound_#1_prop } }
+    \seq_gput_right:Nn \g__chemnum_defined_compounds_seq {#1}
+    \int_gincr:N \g__chemnum_main_int
+    \stepcounter{cmpdmain}
+    \prop_gput:cnn { g__chemnum_compound_#1_prop } {ID} {#1}
+    \prop_gput:cnx { g__chemnum_compound_#1_prop } {number}
+      { \int_use:N \c@cmpdmain }
+    %  { \int_use:N \g__chemnum_main_int }
+    \prop_gput:cnx { g__chemnum_compound_#1_prop } {counter-representation}
+      {
+        \tl_use:N \l__chemnum_pre_counter_default_tl
+        \__chemnum_label_format:NV
+          \c@cmpdmain % \g__chemnum_main_int
+          \l__chemnum_default_counter_representation_tl
+        \tl_use:N \l__chemnum_post_counter_default_tl
+      }
+    \prop_gput:cnV { g__chemnum_compound_#1_prop } {pre-label-code}
+      \l__chemnum_pre_label_default_tl
+    \prop_gput:cnV { g__chemnum_compound_#1_prop } {post-label-code}
+      \l__chemnum_post_label_default_tl
+    \prop_gput:cnV { g__chemnum_compound_#1_prop } {label-format}
+      \l__chemnum_label_format_tl
+    \__chemnum_write_compound_to_auxfile:nnnVVV {#1}
+      { \int_use:N \g__chemnum_main_int }
+      {
+        \tl_use:N \l__chemnum_pre_counter_default_tl
+        \__chemnum_label_format:NV
+          \c@cmpdmain % \g__chemnum_main_int
+          \l__chemnum_default_counter_representation_tl
+        \tl_use:N \l__chemnum_post_counter_default_tl
+      }
+      \l__chemnum_pre_label_default_tl
+      \l__chemnum_post_label_default_tl
+      \l__chemnum_label_format_tl
+    \chemnum_compound_update_property:nn {#1} {number}
+    \chemnum_compound_update_property:nn {#1} {counter-representation}
+    \chemnum_compound_update_property:nn {#1} {pre-label-code}
+    \chemnum_compound_update_property:nn {#1} {post-label-code}
+    \chemnum_compound_update_property:nn {#1} {label-format}
+    \seq_new:c { g__chemnum_#1_initiated_subcompounds_seq }
+    \chemnum_log_main:n {#1}
+  }
+
+% #1: main ID
+% #2: sub ID
+\cs_new_protected:Npn \chemnum_define_subcompound:nn #1#2
+  {
+    \int_if_exist:cF { g__chemnum_compound_#1_subcompound_int }
+      { \int_new:c { g__chemnum_compound_#1_subcompound_int } }
+    \int_gincr:c { g__chemnum_compound_#1_subcompound_int }
+    \seq_if_exist:cF { g__chemnum_compound_#1_subcompounds_seq }
+      { \seq_new:c { g__chemnum_compound_#1_subcompounds_seq } }
+    \prop_if_exist:cF { g__chemnum_compound_#1_subcompounds_prop }
+      { \prop_new:c { g__chemnum_compound_#1_subcompounds_prop } }
+    \seq_gput_right:cn { g__chemnum_compound_#1_subcompounds_seq } {#2}
+    \prop_gput:cnx { g__chemnum_compound_#1_subcompounds_prop } {#2}
+      {
+        \int_use:c { g__chemnum_compound_#1_subcompound_int } :
+        \__chemnum_label_format:cV
+          { g__chemnum_compound_#1_subcompound_int }
+          \l__chemnum_default_subcounter_representation_tl
+      }
+    \prop_if_exist:cF { g__chemnum_compound_#1_#2_properties_prop }
+      { \prop_new:c { g__chemnum_compound_#1_#2_properties_prop } }
+    \prop_gput:cnx { g__chemnum_compound_#1_#2_properties_prop } {ID}
+      {#2}
+    \prop_gput:cnx { g__chemnum_compound_#1_#2_properties_prop }
+      {main-compound}
+      {#1}
+    \prop_gput:cnx { g__chemnum_compound_#1_#2_properties_prop } {number}
+      { \int_use:c { g__chemnum_compound_#1_subcompound_int } }
+    \prop_gput:cnx { g__chemnum_compound_#1_#2_properties_prop }
+      {counter-representation}
+      {
+        \__chemnum_label_format:cV
+          { g__chemnum_compound_#1_subcompound_int }
+          \l__chemnum_default_subcounter_representation_tl
+      }
+    \__chemnum_write_subcompound_to_auxfile:nnnn {#1} {#2}
+      { \int_use:c { g__chemnum_compound_#1_subcompound_int } }
+      {
+        \__chemnum_label_format:cV
+          { g__chemnum_compound_#1_subcompound_int }
+          \l__chemnum_default_subcounter_representation_tl
+      }
+    \chemnum_subcompound_update_property:nnn {#1} {#2} {number}
+    \chemnum_subcompound_update_property:nnn {#1} {#2}
+      {counter-representation}
+    \chemnum_log_sub:nn {#1} {#2}
+  }
+
+% ----------------------------------------------------------------------------
+\cs_new_protected:Npn \chemnum_log_main:n #1
+  {
+    \bool_if:NT \l__chemnum_log_bool
+      {
+        \bool_if:NTF \l__chemnum_log_verbose_bool
+          { \msg_log:nnn {chemnum} {log-compound-verbose} {#1} }
+          { \msg_log:nnn {chemnum} {log-compound-silent}  {#1} }
+      }
+  }
+
+\cs_new_protected:Npn \chemnum_log_sub:nn #1#2
+  {
+    \bool_if:NT \l__chemnum_log_bool
+      {
+        \bool_if:NTF \l__chemnum_log_verbose_bool
+          { \msg_log:nnnn {chemnum} {log-subcompound-verbose} {#1} {#2} }
+          { \msg_log:nnnn {chemnum} {log-subcompound-silent}  {#1} {#2} }
+      }
+  }
+
+% ----------------------------------------------------------------------------
+% #1: ID
+\prg_new_protected_conditional:Npnn \chemnum_compound_if_initiated:n #1
+  { T,F,TF }
+  {
+    \seq_if_in:NnTF \g__chemnum_initiated_compounds_seq {#1}
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+
+% #1: main ID
+% #2: sub ID
+\prg_new_protected_conditional:Npnn \chemnum_subcompound_if_initiated:nn #1#2
+  { T,F,TF }
+  {
+    \seq_if_in:cnTF { g__chemnum_#1_initiated_subcompounds_seq } {#2}
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+
+% #1: ID
+\prg_new_protected_conditional:Npnn \chemnum_compound_if_defined:n #1
+  { T,F,TF }
+  {
+    \seq_if_in:NnTF \g__chemnum_defined_compounds_seq {#1}
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+
+% #1: main ID
+% #2: sub ID
+\prg_new_protected_conditional:Npnn \chemnum_subcompound_if_defined:nn #1#2
+  { T,F,TF }
+  {
+    \seq_if_in:cnTF { g__chemnum_compound_#1_subcompounds_seq } {#2}
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+
+% ----------------------------------------------------------------------------
+% #1: ID
+% #2: property to be updated
+\cs_new_protected:Npn \chemnum_compound_update_property:nn #1#2
+  {
+    \prop_get:cnN { g__chemnum_compound_#1_prop } {previous-#2}
+      \l__chemnum_tmpa_tl
+    \prop_get:cnN { g__chemnum_compound_#1_prop } {#2}
+      \l__chemnum_tmpb_tl
+    \tl_if_eq:NNF \l__chemnum_tmpb_tl \l__chemnum_tmpa_tl
+      {
+        \prop_gput:cnV { g__chemnum_compound_#1_prop }
+          {previous-#2}
+          \l__chemnum_tmpb_tl
+      }
+  }
+
+% #1: main ID
+% #2. sub ID
+% #3: property to be updated
+\cs_new_protected:Npn \chemnum_subcompound_update_property:nnn #1#2#3
+  {
+    \prop_get:cnN { g__chemnum_compound_#1_#2_properties_prop } {previous-#3}
+      \l__chemnum_tmpa_tl
+    \prop_get:cnN { g__chemnum_compound_#1_#2_properties_prop } {#3}
+      \l__chemnum_tmpb_tl
+    \tl_if_eq:NNF \l__chemnum_tmpb_tl \l__chemnum_tmpa_tl
+      {
+        \prop_gput:cnV { g__chemnum_compound_#1_#2_properties_prop }
+          {previous-#3}
+          \l__chemnum_tmpb_tl
+      }
+  }
+
+% #1: ID
+% #2: property
+\cs_new_protected:Npn \chemnum_get_compound_property:nn #1#2
+  { \chemnum_get_compound_property_or:nnn {#1} {#2} { } }
+
+\cs_new_protected:Npn \chemnum_get_compound_property_or:nnn #1#2#3
+  {
+    \prop_get:cnNTF { g__chemnum_compound_#1_prop } {#2}
+      \l__chemnum_tmpa_tl
+      { \tl_use:N \l__chemnum_tmpa_tl }
+      {#3}
+  }
+
+\cs_new:Npn \chemnum_expandable_get_compound_property:nn #1#2
+  { \prop_get:cn { g__chemnum_compound_#1_prop } {#2} }
+
+% #1: main ID
+% #2: sub ID
+% #3: property
+\cs_new_protected:Npn \chemnum_get_subcompound_property:nnn #1#2#3
+  { \chemnum_get_subcompound_property_or:nnnn {#1} {#2} {#3} { } }
+
+\cs_new_protected:Npn \chemnum_get_subcompound_property_or:nnnn #1#2#3#4
+  {
+    \prop_get:cnNTF { g__chemnum_compound_#1_#2_properties_prop } {#3}
+      \l__chemnum_tmpa_tl
+      { \tl_use:N \l__chemnum_tmpa_tl }
+      {#4}
+  }
+
+\cs_new:Npn \chemnum_expandable_get_subcompound_property:nnn #1#2#3
+  { \prop_get:cn { g__chemnum_compound_#1_#2_properties_prop } {#3} }
+
+% ----------------------------------------------------------------------------
+\DeclareExpandableDocumentCommand \cmpdproperty { mm }
+  { \chemnum_expandable_get_compound_property:nn {#1} {#2} }
+
+\DeclareExpandableDocumentCommand \subcmpdproperty { mmm }
+  { \chemnum_expandable_get_subcompound_property:nnn {#1} {#2} {#3} }
+
+% ----------------------------------------------------------------------------
+% initiating subcompounds:
+
+% #1: main ID
+% #2: sub ID
+\cs_new_protected:Npn \chemnum_initiate_subcompound:nn #1#2
+  { \seq_gput_right:cn { g__chemnum_#1_initiated_subcompounds_seq } {#2} }
+
+% ----------------------------------------------------------------------------
+
+% saving compounds to the auxilliary file:
+% #1: ID
+% #2: counter value
+% #3: counter representation
+% #4: pre label
+% #5: post label
+% #6: label format
+\cs_new_protected:Npn \__chemnum_write_compound_to_auxfile:nnnnnn #1#2#3#4#5#6
+  {
+    \if@filesw
+      \token_if_eq_meaning:NNT \@nodocument \relax
+        {
+          \iow_now:Nx \@auxout
+            {
+              \exp_not:N \chemnum@cmpd{#1}{#2}{#3}
+              \exp_not:n { {#4}{#5}{#6} }
+            }
+        }
+    \fi
+  }
+\cs_generate_variant:Nn \__chemnum_write_compound_to_auxfile:nnnnnn { nnnVVV }
+
+% #1: main ID
+% #2: sub ID
+% #2: counter value
+% #3: counter representation
+\cs_new_protected:Npn \__chemnum_write_subcompound_to_auxfile:nnnn #1#2#3#4
+  {
+    \if@filesw
+      \token_if_eq_meaning:NNT \@nodocument \relax
+        {
+          \iow_now:Nx \@auxout
+            { \exp_not:N \chemnum@subcmpd{#1}{#2}{#3}{#4} }
+        }
+    \fi
+  }
+
+% ----------------------------------------------------------------------------
+% #1: ID
+% #2: counter value
+% #3: counter representation
+\cs_new_protected:Npn \chemnum@cmpd #1#2#3#4#5#6
+  {
+    \prop_if_exist:cF { g__chemnum_compound_#1_prop }
+      { \prop_new:c { g__chemnum_compound_#1_prop } }
+    \prop_gput:cnn { g__chemnum_compound_#1_prop }
+      {previous-number} {#2}
+    \prop_gput:cnn { g__chemnum_compound_#1_prop }
+      {previous-counter-representation} {#3}
+  }
+
+% #1: main ID
+% #2: sub ID
+% #3: counter value
+% #4: counter representation
+\cs_new_protected:Npn \chemnum@subcmpd #1#2#3#4
+  {
+    \prop_if_exist:cF { g__chemnum_compound_#1_#2_properties_prop }
+      { \prop_new:c { g__chemnum_compound_#1_#2_properties_prop } }
+    \prop_gput:cnn { g__chemnum_compound_#1_#2_properties_prop }
+      {previous-number} {#3}
+    \prop_gput:cnn { g__chemnum_compound_#1_#2_properties_prop }
+      {previous-counter-representation} {#4}
+  }
+
+% ----------------------------------------------------------------------------
+% declaring and writing compounds:
+
+% #1: options
+% #2: ID
+\cs_new_protected:Npn \chemnum_declare_compound:nn #1#2
+  {
+    \tl_if_blank:nF {#1}
+      { \keys_set_groups:nnn {chemnum} {compound} { compound=true , #1 } }
+    \chemnum_compound_if_initiated:nF {#2}
+      {
+        \bool_if:NT \g__chemnum_initiate_bool
+          {
+            \bool_if:NTF \g__chemnum_initiate_strict_bool
+              { \msg_error:nnn   {chemnum} {compound-not-initiated} {#2} }
+              { \msg_warning:nnn {chemnum} {compound-not-initiated} {#2} }
+          }
+        \cmpdshowdef { #2 }
+        \bool_set_false:N \l__chemnum_show_ref_bool
+        \chemnum_initiate_compound:n {#2}
+      }
+    \chemnum_compound_if_defined:nF {#2}
+      { \chemnum_define_compound:n {#2} }
+  }
+
+% #1: options
+% #2: main ID
+% #3: sub ID
+\cs_new_protected:Npn \chemnum_declare_subcompound:nnn #1#2#3
+  {
+    % \keys_set:nn {chemnum} {#1}
+    \chemnum_subcompound_if_initiated:nnF {#2} {#3}
+      {
+        \bool_if:NT \g__chemnum_initiate_sub_bool
+          {
+            \bool_if:NTF \g__chemnum_initiate_strict_bool
+              {
+                \msg_error:nnnn {chemnum} {subcompound-not-initiated}
+                  {#2} {#3}
+              }
+              {
+                \msg_warning:nnnn {chemnum} {subcompound-not-initiated}
+                  {#2} {#3}
+              }
+          }
+        \subcmpdshowdef { #2 } { #3 }
+        \bool_set_false:N \l__chemnum_show_ref_bool
+        \chemnum_initiate_subcompound:nn {#2} {#3}
+      }
+    \chemnum_subcompound_if_defined:nnF {#2} {#3}
+      { \chemnum_define_subcompound:nn {#2} {#3} }
+  }
+
+% actively write a compound:
+% #1: ID
+\cs_new_protected:Npn \chemnum_compound_write:n #1
+  {
+    \chemnum_get_compound_property:nn {#1} {pre-label-code}
+    \group_begin:
+      \tl_if_eq:NNTF \l__chemnum_local_label_format_tl \l__chemnum_label_format_tl
+        { \chemnum_get_compound_property:nn {#1} {label-format} }
+        { \l__chemnum_local_label_format_tl }
+      \chemnum_get_compound_property:nn {#1} {counter-representation}
+    \group_end:
+    \chemnum_get_compound_property:nn {#1} {post-label-code}
+  }
+
+% actively write a subcompound:
+% #1: main ID
+% #2: sub ID
+\cs_new_protected:Npn \chemnum_subcompound_write:nn #1#2
+  {
+    \group_begin:
+      \chemnum_get_compound_property:nn {#1} {label-format}
+      \chemnum_get_subcompound_property:nnn {#1} {#2}
+        {counter-representation}
+    \group_end:
+  }
+
+% this is only provided for use in PDF strings:
+\cs_new:Npn \chemnum_expandable_compound_write:n #1
+  {
+    \chemnum_expandable_get_compound_property:nn {#1} {pre-label-code}
+    \chemnum_expandable_get_compound_property:nn {#1} {counter-representation}
+    \chemnum_expandable_get_compound_property:nn {#1} {post-label-code}
+  }
+
+\cs_new:Npn \chemnum_expandable_subcompound_write:nn #1#2
+  {
+    \chemnum_expandable_get_subcompound_property:nnn {#1} {#2}
+      {counter-representation}
+  }
+
+% read and write saved values:
+% #1: ID
+\cs_new_protected:Npn \chemnum_compound_read:n #1
+  {
+    \chemnum_get_compound_property:nn {#1} {previous-pre-label-code}
+    \group_begin:
+      \chemnum_get_compound_property:nn {#1} {previous-label-format}
+      \chemnum_get_compound_property_or:nnn {#1}
+        { previous-counter-representation } { ?? \__chemnum_rerun: }
+    \group_end:
+    \chemnum_get_compound_property:nn {#1} {previous-post-label-code}
+    
+  }
+
+% this is only provided for use in PDF strings:
+\cs_new:Npn \chemnum_expandable_compound_read:n #1
+  {
+    \chemnum_expandable_get_compound_property:nn {#1} {previous-pre-label-code}
+    \chemnum_expandable_get_compound_property:nn {#1} {previous-counter-representation}
+    \chemnum_expandable_get_compound_property:nn {#1} {previous-post-label-code}
+  }
+
+\cs_new:Npn \chemnum_expandable_subcompound_read:nn #1#2
+  {
+    \chemnum_expandable_get_subcompound_property:nnn {#1} {#2}
+      {previous-counter-representation}
+  }
+
+% write a label from the entries of \cmpd:
+% #1: boolean: if true register compound but don't write the label
+% #2: boolean: if true only read compound
+% #3: options
+% #4: label specifications
+\cs_new_protected:Npn \chemnum_single_compound:NNnn #1#2#3#4
+  {
+    \bool_if:NT #1 { \@bsphack }
+    \group_begin:
+      \chemnum_split_sub_from_main:VNNnn
+        \l__chemnum_compound_separator_tl
+        #1 #2 {#3} {#4}
+    \group_end:
+    \bool_if:NT {#1} { \@esphack }
+  }
+
+% #1: label separator
+% #2: boolean: if true register compound but don't write the label
+% #3: boolean: if true only read compound
+% #4: options
+% #5: label spec
+\cs_new_protected:Npn \chemnum_split_sub_from_main:nNNnn #1#2#3#4#5
+  {
+    \cs_set:Npn \__chemnum_split_sub_from_main_aux:nnnw ##1##2##3##4#1##5#1##6 \q_stop
+      {
+        \chemnum_write_main:nnnn {##1} {##2} {##3} {##4}
+        \bool_if:nT
+          {
+            !\l__chemnum_sub_all_bool &&
+            !\tl_if_blank_p:n {##5}
+          }
+          { \chemnum_write_sublist:NNnnn ##1 ##2 {##3} {##4} {##5} }
+        \bool_if:NT \l__chemnum_sub_all_bool
+          {
+            \tl_clear:N \l__chemnum_tmpa_tl
+            \tl_set:Nx \l__chemnum_tmpa_tl
+              {
+                \seq_use:cn { g__chemnum_compound_##4_subcompounds_seq } { , }
+              }
+            \tl_if_blank:VF \l__chemnum_tmpa_tl
+              {
+                \chemnum_write_sublist:NNnnV ##1 ##2 {##3} {##4}
+                  \l__chemnum_tmpa_tl
+              }
+          }
+      }
+    \__chemnum_split_sub_from_main_aux:nnnw {#2} {#3} {#4} #5#1#1 \q_stop
+  }
+\cs_generate_variant:Nn \chemnum_split_sub_from_main:nNNnn { V }
+
+\cs_new:Npn \__chemnum_split_sub_from_main_aux:nnnw #1#2#3#4.#5.#6 \q_stop {}
+
+% \chemnum_write_main:nnnn will write the main label, either with saved
+% values (+ variant, boolean #2=true), or only register it (* variant, boolean
+% #1=true)
+% 
+% #1: boolean: if true register compound but don't write the label
+% #2: boolean: if true only read compound
+% #3: options
+% #4: label spec
+\cs_new_protected:Npn \chemnum_write_main:nnnn #1#2#3#4
+  {
+    \bool_if:NTF #2
+      {
+        \chemnum_compound_read:n {#4}
+        \bool_if:NT #1
+          { \msg_error:nn {chemnum} { erroneous-argument-combination } }
+      }
+      {
+        \chemnum_declare_compound:nn {#3} {#4}
+        \cmpdshowref { #4 }
+        \bool_if:nF
+          { #1 || \l__chemnum_sub_only_bool }
+          { \chemnum_compound_write:n {#4} }
+      }
+  }
+
+% ----------------------------------------------------------------------------
+\cs_set_protected:Npn \chemnum_show_key_def:n #1
+  {
+    \bool_if:NT \l__chemnum_show_def_bool
+      { \marginpar { \fbox { \normalfont \ttfamily #1 } } }
+  }
+
+% TODO: port this to something more expl3 like:
+\cs_set_protected:Npn \chemnum_show_key_ref:n #1
+  {
+    \bool_if:NT \l__chemnum_show_ref_bool
+      {
+        \group_begin:
+          \leavevmode
+          \vbox_to_zero:n
+            {
+              \tex_vss:D
+              \hbox_overlap_right:n
+                {
+                  \tex_vrule:D \tex_raise:D .75em
+                  \hbox:n
+                    { \underbar { \normalfont \footnotesize \ttfamily #1 } }
+                }
+            }
+        \group_end:
+      }
+  }
+
+\cs_set_protected:Npn \chemnum_show_subkey_def:nn #1#2
+  { \chemnum_show_key_def:n { #2~(#1) } }
+
+\cs_set_protected:Npn \chemnum_show_subkey_ref:nn #1#2
+  { \chemnum_show_key_ref:n { #2 } }
+
+% ----------------------------------------------------------------------------
+\NewDocumentCommand \cmpdshowdef { m }
+  { \chemnum_show_key_def:n { #1 } }
+\NewDocumentCommand \cmpdshowref { m }
+  { \chemnum_show_key_ref:n { #1 } }
+\NewDocumentCommand \subcmpdshowdef { mm }
+  { \chemnum_show_subkey_def:nn { #1 } { #2 } }
+\NewDocumentCommand \subcmpdshowref { mm }
+  { \chemnum_show_subkey_ref:nn { #1 } { #2 } }
+
+% ----------------------------------------------------------------------------
+% #1: boolean: if true register compound but don't write the label
+% #2: boolean: if true only read compound
+% #3: options
+% #4: main label id
+% #5: sublabel list
+\cs_new_protected:Npn \chemnum_write_sublist:NNnnn #1#2#3#4#5
+  {
+    \seq_set_split:NVn
+      \l__chemnum_tmpc_seq
+      \l__chemnum_main_separator_tl
+      {#5}
+    \seq_remove_duplicates:N \l__chemnum_tmpc_seq
+    \seq_map_inline:Nn \l__chemnum_tmpc_seq
+      {
+        \bool_if:NF #2
+          { \chemnum_declare_subcompound:nnn {#3} {#4} {##1} }
+      }
+    \seq_clear:N \l__chemnum_tmpd_seq
+    % puts the subcompounds ready to be printed in \l__chemnum_tmpd_seq :
+    \chemnum_sort_subcompounds:NNNnnNN #1#2
+      \l__chemnum_tmpc_seq
+      {#3}
+      {#4}
+      \l__chemnum_tmpd_seq % to write the uncompressed list
+      \l__chemnum_tmpe_seq % for compressing the list, holds the numbers
+    \bool_if:nTF
+      {
+        \l__chemnum_compress_subcompounds_bool
+        &&
+        \int_compare_p:n { \seq_count:N \l__chemnum_tmpe_seq > 2 }
+      }
+      {
+        % needs a seq with the associated /numbers/!
+        \chemnum_compress_subcompounds:NNN
+          \l__chemnum_tmpd_seq % holds the IDs
+          \l__chemnum_tmpe_seq % holds the numbers
+          \l__chemnum_tmpc_seq % the new sequence
+        \seq_use:Nn \l__chemnum_tmpc_seq {}
+      }
+      {
+        \seq_use:NVVV \l__chemnum_tmpd_seq
+          \l__chemnum_sep_sublist_two_tl
+          \l__chemnum_sep_sublist_more_tl
+          \l__chemnum_sep_sublist_last_two_tl
+      }
+  }
+\cs_generate_variant:Nn \chemnum_write_sublist:NNnnn { NNnnV }
+
+% #1: boolean: if true register compound but don't write the label
+% #2: boolean: if true only read compound
+% #3: options
+% #4: main ID
+% #5: sub ID
+\cs_new_protected:Npn \chemnum_write_subcompound:NNnnn #1#2#3#4#5
+  {
+    \bool_if:NTF #2
+      { \chemnum_subcompound_read:nn {#4} {#5} }
+      {
+        \chemnum_declare_subcompound:nnn {#3} {#4} {#5}
+        \subcmpdshowref { #4 } { #5 }
+        \bool_if:NF #1
+          { \chemnum_subcompound_write:nn {#4} {#5} }
+      }
+  }
+\cs_generate_variant:Nn \chemnum_write_subcompound:NNnnn { NNnnV }
+
+%%% The following command sorts the sequence according to the order in which
+%%% they've been declared
+% #1: boolean: if true register compound but don't write the label
+% #2: boolean: if true only read compound
+% #3: sub ID sequence
+% #4: options
+% #5: main ID
+% #6: seq variable
+% #7: seq variable
+\cs_new_protected:Npn \chemnum_sort_subcompounds:NNNnnNN #1#2#3#4#5#6#7
+  {
+    \seq_clear:N #6
+    \seq_clear:N #7
+    \bool_if:NF #1
+      {
+        \seq_map_inline:cn { g__chemnum_compound_#5_subcompounds_seq }
+          {
+            \seq_if_in:NnT #3 {##1}
+              {
+                \seq_put_right:Nn #6
+                  { \chemnum_write_subcompound:NNnnn #1 #2 {#4} {#5} {##1} }
+                \seq_put_right:Nx #7
+                  {
+                    \chemnum_expandable_get_subcompound_property:nnn
+                      { #5 } { ##1 } { number }
+                  }
+              }
+          }
+      }
+  }
+
+% #1: sub ID sequence
+% #2: sub ID sequence that holds the numbers rather than the IDs
+% #3: seq variable
+\cs_new_protected:Npn \chemnum_compress_subcompounds:NNN #1#2#3
+  {
+    \int_zero:N \l__chemnum_tmpa_int
+    \int_zero:N \l__chemnum_tmpb_int
+    \seq_clear:N \l__chemnum_tmpa_seq
+    \seq_clear:N #3
+    \seq_map_inline:Nn #2
+      {
+        \int_incr:N \l__chemnum_tmpa_int
+        \int_compare:nTF { \l__chemnum_tmpa_int = 1 }
+          { \seq_put_right:Nn \l__chemnum_tmpa_seq { 1 } }
+          {
+            \seq_put_right:Nx \l__chemnum_tmpa_seq
+              { \int_eval:n { ##1 - \l__chemnum_tmpb_int } }
+          }
+        \int_set:Nn \l__chemnum_tmpb_int { ##1 }
+      }
+    \int_zero:N \l__chemnum_tmpa_int
+    \int_set:Nn \l__chemnum_tmpb_int { \seq_count:N #2 }
+    \int_zero:N \l__chemnum_tmpc_int
+    \seq_map_inline:Nn \l__chemnum_tmpa_seq
+      {
+        \int_incr:N \l__chemnum_tmpa_int
+        \int_compare:nTF { \l__chemnum_tmpa_int = 1 }
+          {
+            \int_add:Nn \l__chemnum_tmpc_int { ##1 }
+            \seq_put_right:Nx #3 { \seq_item:Nn #1 { 1 } }
+          }
+          {
+            \int_compare:nTF { ##1 = 1 }
+              { \int_add:Nn \l__chemnum_tmpc_int { ##1 } }
+              {
+                \int_compare:nTF { \l__chemnum_tmpc_int > 2 }
+                  {
+                    \seq_put_right:NV #3 \l__chemnum_sep_sublist_range_tl
+                    \seq_put_right:Nx #3
+                      { \seq_item:Nn #1 { \l__chemnum_tmpa_int - 1 } }
+                    \seq_put_right:NV #3 \l__chemnum_sep_sublist_two_tl
+                    \seq_put_right:Nx #3
+                      { \seq_item:Nn #1 { \l__chemnum_tmpa_int } }
+                  }
+                  {
+                    \seq_get_right:NN #3 \l__chemnum_tmpa_tl
+                    \tl_if_eq:VxF
+                      \l__chemnum_tmpa_tl
+                      { \seq_item:Nn #1 { \l__chemnum_tmpa_int - 1 } }
+                      {
+                        \seq_put_right:NV #3 \l__chemnum_sep_sublist_two_tl
+                        \seq_put_right:Nx #3
+                          { \seq_item:Nn #1 { \l__chemnum_tmpa_int - 1 } }
+                      }
+                    \seq_put_right:NV #3 \l__chemnum_sep_sublist_two_tl
+                    \seq_put_right:Nx #3
+                      { \seq_item:Nn #1 { \l__chemnum_tmpa_int } }
+                  }
+                \int_set:Nn \l__chemnum_tmpc_int { 1 }
+              }
+            \int_compare:nT { \l__chemnum_tmpa_int = \l__chemnum_tmpb_int }
+              {
+                \seq_get_right:NN #3 \l__chemnum_tmpa_tl
+                \tl_if_eq:VxF
+                  \l__chemnum_tmpa_tl
+                  { \seq_item:Nn #1 { \l__chemnum_tmpa_int } }
+                  {
+                    \int_compare:nTF { \l__chemnum_tmpc_int > 2 }
+                      { \seq_put_right:NV #3 \l__chemnum_sep_sublist_range_tl }
+                      { \seq_put_right:NV #3 \l__chemnum_sep_sublist_last_two_tl }
+                    \seq_put_right:Nx #3
+                      { \seq_item:Nn #1 { \l__chemnum_tmpa_int } }
+                  }
+              }
+          }
+      }
+  }
+
+% ----------------------------------------------------------------------------
+% the code level version of the main command:
+% #1: boolean: if true register compound but don't write the label
+% #2: boolean: if true only read compound
+% #3: options
+% #4: list of IDs
+\cs_new_protected:Npn \chemnum_cmpd:nnnn #1#2#3#4
+  {
+    \seq_set_split:NVn
+      \l__chemnum_tmpa_seq
+      \l__chemnum_main_separator_tl
+      {#4}
+    \seq_remove_duplicates:N \l__chemnum_tmpa_seq
+    \seq_clear:N \l__chemnum_tmpb_seq
+    \seq_map_inline:Nn \l__chemnum_tmpa_seq
+      {
+        \seq_put_right:Nn \l__chemnum_tmpb_seq
+          { \chemnum_single_compound:NNnn #1 #2 {#3} {##1} }
+      }
+    \bool_if:NTF #1 % starred call of \cmpd
+      { \seq_use:Nn \l__chemnum_tmpb_seq {} }
+      {
+        \seq_use:NVVV \l__chemnum_tmpb_seq
+          \l__chemnum_sep_list_two_tl
+          \l__chemnum_sep_list_more_tl
+          \l__chemnum_sep_list_last_two_tl
+      }
+  }
+
+% %-----------------------------------------------------------------------------%
+% % REPLACE TAG IN EPS PICTURE WITH LABEL
+% % works similar to \schemeref command of the chemscheme package
+% % \cmpdref-[<keyval>][<tag>]{<label name>}
+
+\cs_new_protected:Npn \__chemnum_set_psfrag_pos:nn #1#2
+  {
+    \tl_set:Nn \l__chemnum_psfrag_texpos_tl { #1 }
+    \tl_set:Nn \l__chemnum_psfrag_pspos_tl { #2 }
+  }
+
+\cs_new_protected:Npn \__chemnum_set_psfrag_local_pos:nn #1#2
+  {
+    \tl_set:Nn \l__chemnum_psfrag_local_texpos_tl { #1 }
+    \tl_set:Nn \l__chemnum_psfrag_local_pspos_tl { #2 }
+  }
+\cs_generate_variant:Nn \__chemnum_set_psfrag_local_pos:nn { VV }
+
+\cs_new_protected:Npn \__chemnum_psfrag:nnnn #1#2#3#4
+  { \psfrag { #1 } [ #2 ] [ #3 ] { #4 } }
+\cs_generate_variant:Nn \__chemnum_psfrag:nnnn { VVVx }
+
+% #1: boolean: if true only read label
+% #2: options
+% #3: label spec
+\cs_new_protected:Npn \chemnum_cmpd_replace:nnn #1#2#3
+  {
+    % place the label
+    %   just in case it hasn't been declared:
+    \labelcmpd[{#2}]{#3}
+    % set specific replacement options
+    \keys_set_groups:nnn {chemnum} {replace} { replace=false, #2 }
+    \bool_if:nTF
+      {
+        \l__chemnum_compound_replace_auto_bool &&
+        \l__chemnum_compound_replace_auto_this_bool
+      }
+      {
+        \int_incr:N \l__chemnum_compound_replace_int
+        \tl_set:Nx \l__chemnum_compound_replace_tl
+          {
+            \exp_not:V \l__chemnum_compound_replace_tag_tl
+            \exp_not:V \l__chemnum_compound_replace_int
+          }
+      }
+      {
+        \tl_set_eq:NN
+          \l__chemnum_compound_replace_tl
+          \l__chemnum_compound_replace_tag_tl
+        \bool_set_true:N \l__chemnum_compound_replace_auto_this_bool
+      }
+    %   replace in EPS, this must not be in a group:
+    \bool_if:NTF \l__chemnum_replace_local_bool
+      {
+        \__chemnum_psfrag:VVVx
+          \l__chemnum_compound_replace_tl
+          \l__chemnum_psfrag_local_texpos_tl
+          \l__chemnum_psfrag_local_pspos_tl
+          {
+            \group_begin:
+              \exp_not:V \l__chemnum_compound_replace_local_format_tl
+              \exp_not:n
+                { \chemnum_cmpd:nnnn { \c_false_bool } { #1 } { #2 } { #3 } }
+            \group_end:
+          }
+      }
+      {
+        \__chemnum_psfrag:VVVx
+          \l__chemnum_compound_replace_tl
+          \l__chemnum_psfrag_texpos_tl
+          \l__chemnum_psfrag_pspos_tl
+          {
+            \group_begin:
+              \exp_not:V \l__chemnum_compound_replace_format_tl
+              \exp_not:n
+                { \chemnum_cmpd:nnnn { \c_false_bool } { #1 } { #2 } { #3 } }
+            \group_end:
+          }
+      }
+    % clean up local options:
+    \keys_set_groups:nnn {chemnum} {replace} { replace=false }
+    \__chemnum_set_psfrag_local_pos:VV
+      \l__chemnum_psfrag_texpos_tl
+      \l__chemnum_psfrag_pspos_tl
+    \tl_set_eq:NN
+      \l__chemnum_compound_replace_local_format_tl
+      \l__chemnum_compound_replace_format_tl
+  }
+
+\NewDocumentCommand \replacecmpd { t+ o m }
+  { \chemnum_cmpd_replace:nnn { #1 } { #2 } { #3 } }
+
+\chemnum_deprecated_command:NN \cmpdref \replacecmpd
+
+% ----------------------------------------------------------------------------
+% the user level version of the main command:
+\NewDocumentCommand \cmpd { st+O{}m  }
+  { \chemnum_cmpd:nnnn {#1} {#2} {#3} {#4} }
+
+\NewDocumentCommand \refcmpd { O{}m  }
+  { \chemnum_cmpd:nnnn { \c_false_bool } { \c_true_bool } {#1} {#2} }
+
+\NewDocumentCommand \labelcmpd { O{}m  }
+  { \chemnum_cmpd:nnnn { \c_true_bool } { \c_false_bool } {#1} {#2} }
+
+% TODO: this command should be able to read at least /one/ sublabel
+\DeclareExpandableDocumentCommand \cmpdplain { m }
+  { \chemnum_expandable_compound_read:n {#1} }
+
+\DeclareExpandableDocumentCommand \subcmpdplain { mm }
+  { \chemnum_expandable_subcompound_read:nn {#1} {#2} }
+
+\DeclareExpandableDocumentCommand \submaincmpdplain { mm }
+  {
+    \chemnum_expandable_compound_read:n {#1}
+    \chemnum_expandable_subcompound_read:nn {#1} {#2}
+  }
+
+% ----------------------------------------------------------------------------
+\cs_new_protected:Npn \chemnum_init:nn #1#2
+  {
+    \group_begin:
+      % this is semantically wrong!  The conflict: either I allow initiation
+      % to be set locally (which does not make sense, really) or I use wrong
+      % semantics at this very point in the package code...
+      \bool_set_false:N \g__chemnum_initiate_bool
+      \bool_set_false:N \g__chemnum_initiate_sub_bool
+      \chemnum_cmpd:nnnn { \c_true_bool } { \c_false_bool } {#1} {#2}
+    \group_end:
+  }
+
+\NewDocumentCommand \initcmpd { O{}m }
+  { \chemnum_init:nn {#1} {#2} }
+\@onlypreamble\cmpdinit
+
+\chemnum_deprecated_command:NN \cmpdinit \initcmpd
+
+% ----------------------------------------------------------------------------
+% resetting compound numbering
+\cs_new_protected:Npn \chemnum_reset_compounds:n #1
+  { \setcounter {cmpdmain} { \int_eval:n { #1 - 1 } } }
+
+\NewDocumentCommand \resetcmpd { O{1} }
+  { \chemnum_reset_compounds:n {#1} }
+
+% ----------------------------------------------------------------------------
+% language support:
+\DeclareTranslationFallback      {chemnum-sep-two} {~and~}
+\DeclareTranslation {English}    {chemnum-sep-two} {~and~}
+\DeclareTranslation {German}     {chemnum-sep-two} {~und~}
+\DeclareTranslation {French}     {chemnum-sep-two} {~et~}
+\DeclareTranslation {Spanish}    {chemnum-sep-two} {~y~}
+\DeclareTranslation {Italian}    {chemnum-sep-two} {~e~}
+\DeclareTranslation {Catalan}    {chemnum-sep-two} {~i~}
+\DeclareTranslation {Portuguese} {chemnum-sep-two} {~e~}
+\DeclareTranslation {Dutch}      {chemnum-sep-two} {~en~}
+\DeclareTranslation {Danish}     {chemnum-sep-two} {~og~}
+\DeclareTranslation {Swedish}    {chemnum-sep-two} {~och~}
+\DeclareTranslation {Finnish}    {chemnum-sep-two} {~ja~}
+\DeclareTranslation {Norwegian}  {chemnum-sep-two} {~og~}
+
+\DeclareTranslationFallback      {chemnum-sep-last-two} {,~and~}
+\DeclareTranslation {English}    {chemnum-sep-last-two} {~and~}
+\DeclareTranslation {American}   {chemnum-sep-last-two} {,~and~}
+\DeclareTranslation {German}     {chemnum-sep-last-two} {~und~}
+\DeclareTranslation {French}     {chemnum-sep-last-two} {~et~}
+\DeclareTranslation {Spanish}    {chemnum-sep-last-two} {~y~}
+\DeclareTranslation {Italian}    {chemnum-sep-last-two} {~e~}
+\DeclareTranslation {Catalan}    {chemnum-sep-last-two} {~i~}
+\DeclareTranslation {Portuguese} {chemnum-sep-last-two} {~e~}
+\DeclareTranslation {Dutch}      {chemnum-sep-last-two} {~en~}
+\DeclareTranslation {Danish}     {chemnum-sep-last-two} {~og~}
+\DeclareTranslation {Swedish}    {chemnum-sep-last-two} {~och~}
+\DeclareTranslation {Finnish}    {chemnum-sep-last-two} {~ja~}
+\DeclareTranslation {Norwegian}  {chemnum-sep-last-two} {~og~}
+
+% ----------------------------------------------------------------------------
+% TODO: add a warning for those options that can't be set with the setup
+%       command, i.e., those belonging to the `compound' group
+\cs_new_protected:Npn \chemnum_setup:n #1
+  {
+    \keys_set_filter:nnn {chemnum} {compound} {#1}
+    \keys_set_groups:nnn {chemnum} {global} {#1}
+  }
+
+\NewDocumentCommand \setchemnum { m }
+  { \chemnum_setup:n {#1} }
+
+\chemnum_deprecated_command:NN \cmpdsetup \setchemnum
+
+\tex_endinput:D
+
+% ----------------------------------------------------------------------------
+TODO:
+- \replacecmpd um Tags in EPS Bildern zu ersetzen.
+
+% ----------------------------------------------------------------------------
+new features in chemnum:
+- \cmpdplain{<id>} => reads label and writes it expandably without
+  formatting.  It is not able to parse a list.  Its sole purpose is usage in
+  pdfstrings (cf. \texorpdfstring{<tex>}{<pdfstring>}).
+- \refcmpd[<options>]{<id>} only reference a label, similar to \cmpdplain but
+  unexpandable and able to parse a list.  The same as \cmpd+
+- \cmpdproperty, \subcmpdproperty
+- \newcmpdlabelformat
+- logging messages
+- \cmpdshowdef, \cmpdshowref, \subcmpdshowdef, \subcmpdshowref
+- some options are grouped `compound': only those can be set with \cmpd
+- sub label list is sorted
+- sub label list is compressed when option `compress=true' is used
+
+% ----------------------------------------------------------------------------
+HISTORY:
+
