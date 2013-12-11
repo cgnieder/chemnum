@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------
-xchemnum v0.0 2013/08/22
+chemnum v1.0 2013/12/11
 
   a comprehensive approach for the numbering of chemical compounds
 
@@ -26,8 +26,9 @@ If you have any ideas, questions, suggestions or bugs to report,
 please feel free to contact me.
 --------------------------------------------------------------------------
 This work consists of the files
-  xchemnum.sty
-  README
+- chemnum.sty, chemnum0.sty, chemnum1.sty
+- chemnum_en.tex, chemnum_en.pdf
+- README
 --------------------------------------------------------------------------
 This package is a complete re-write from scratch of the `chemnum' package.
 It will eventually be the official successor of `chemnum' and `chemnum'
