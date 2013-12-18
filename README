@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------
-chemnum v1.0 2013/12/11
+chemnum v1.0beta 2013/12/18
 
   a comprehensive approach for the numbering of chemical compounds
 
@@ -30,7 +30,6 @@ This work consists of the files
 - chemnum_en.tex, chemnum_en.pdf
 - README
 --------------------------------------------------------------------------
-This package is a complete re-write from scratch of the `chemnum' package.
-It will eventually be the official successor of `chemnum' and `chemnum'
-will be declared obsolete (with a enough time (a year?) for transition).
+Version 1 is a complete re-write from scratch of the `chemnum' package.
+The last version 0.* will still be available through a package option
 --------------------------------------------------------------------------

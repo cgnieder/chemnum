@@ -72,6 +72,10 @@
     \chemnum_expandable_get_compound_property:nn {#1}
       {post-label-code}  \\
     . \c_space_tl \c_space_tl \c_space_tl
+    post~ main~ label~ code ~=~
+    \chemnum_expandable_get_compound_property:nn {#1}
+      {post-main-label-code}  \\
+    . \c_space_tl \c_space_tl \c_space_tl
     format ~=~
     \chemnum_expandable_get_compound_property:nn {#1}
       {label-format}  \\
@@ -181,8 +185,11 @@
 \tl_new:N     \l__chemnum_post_counter_default_tl
 \tl_new:N     \l__chemnum_pre_label_default_tl
 \tl_new:N     \l__chemnum_post_label_default_tl
+\tl_new:N     \l__chemnum_post_main_label_default_tl
 \tl_new:N     \l__chemnum_main_separator_tl
 \tl_set:Nn    \l__chemnum_main_separator_tl {,}
+\tl_new:N     \l__chemnum_sub_separator_tl
+\tl_set:Nn    \l__chemnum_sub_separator_tl {,}
 \tl_new:N     \l__chemnum_compound_separator_tl
 \tl_set:Nn    \l__chemnum_compound_separator_tl {.}
 
@@ -242,7 +249,7 @@
 % #2: function with 1 n-type argument that takes an integer
 \cs_new_protected:Npn \chemnum_add_label_format:nN #1#2
   {
-    \cs_if_exist:cTF { __chemnum_#1_label_formtat:n }
+    \cs_if_exist:cTF { __chemnum_#1_label_format:n }
       { \cs_set:cpn { __chemnum_#1_label_format:n } ##1 { #2 { ##1 } } }
       { \cs_new:cpn { __chemnum_#1_label_format:n } ##1 { #2 { ##1 } } }
     \prop_put:Nnx \l__chemnum_label_formats_prop {#1}
@@ -250,16 +257,16 @@
   }
 
 % a user level command to add new formats
-\NewDocumentCommand \newcmpdlabelformat { mm }
+\NewDocumentCommand \newcmpdcounterformat { mm }
   { \chemnum_add_label_format:nN {#1} #2 }
 
-\newcmpdlabelformat {arabic} \int_to_arabic:n
-\newcmpdlabelformat {alph  } \int_to_alph:n
-\newcmpdlabelformat {Alph  } \int_to_Alph:n
-\newcmpdlabelformat {roman } \int_to_roman:n
-\newcmpdlabelformat {Roman } \int_to_Roman:n
-\newcmpdlabelformat {greek } \chemgreek_int_to_greek:n
-\newcmpdlabelformat {Greek } \chemgreek_int_to_Greek:n
+\newcmpdcounterformat {arabic} \int_to_arabic:n
+\newcmpdcounterformat {alph  } \int_to_alph:n
+\newcmpdcounterformat {Alph  } \int_to_Alph:n
+\newcmpdcounterformat {roman } \int_to_roman:n
+\newcmpdcounterformat {Roman } \int_to_Roman:n
+\newcmpdcounterformat {greek } \chemgreek_int_to_greek:n
+\newcmpdcounterformat {Greek } \chemgreek_int_to_Greek:n
 
 % ----------------------------------------------------------------------------
 %%% options
@@ -303,14 +310,18 @@
         } ,
     sub-counter-format    .groups:n   = {compound} ,
     % label:
-    pre-label-code        .tl_set:N   = \l__chemnum_pre_counter_default_tl ,
+    pre-label-code        .tl_set:N   = \l__chemnum_pre_label_default_tl ,
     pre-label-code        .groups:n   = {compound} ,
-    post-label-code       .tl_set:N   = \l__chemnum_post_counter_default_tl ,
+    post-label-code       .tl_set:N   = \l__chemnum_post_label_default_tl ,
     post-label-code       .groups:n   = {compound} ,
+    post-main-label-code  .tl_set:N   = \l__chemnum_post_main_label_default_tl ,
+    post-main-label-code  .groups:n   = {compound} ,
     main-sub-sep          .tl_set:N   = \l__chemnum_compound_separator_tl ,
     main-sub-sep          .groups:n   = {global} ,
     list-label-sep        .tl_set:N   = \l__chemnum_main_separator_tl ,
     list-label-sep        .groups:n   = {global} ,
+    sub-list-label-sep    .tl_set:N   = \l__chemnum_sub_separator_tl ,
+    sub-list-label-sep    .groups:n   = {global} ,
     format                .code:n     =
       \bool_if:NTF \l__chemnum_compound_local_bool
         { \tl_set:Nn \l__chemnum_local_label_format_tl {#1} }
@@ -437,7 +448,7 @@
     \if@filesw
       \iow_now:Nn \@auxout
         {
-          \providecommand\chemnum@cmpd[6]{} ^^J
+          \providecommand\chemnum@cmpd[7]{} ^^J
           \providecommand\chemnum@subcmpd[4]{} ^^J
           \providecommand\chemnum@check{}
         }
@@ -492,9 +503,11 @@
       \l__chemnum_pre_label_default_tl
     \prop_gput:cnV { g__chemnum_compound_#1_prop } {post-label-code}
       \l__chemnum_post_label_default_tl
+    \prop_gput:cnV { g__chemnum_compound_#1_prop } {post-main-label-code}
+      \l__chemnum_post_main_label_default_tl
     \prop_gput:cnV { g__chemnum_compound_#1_prop } {label-format}
       \l__chemnum_label_format_tl
-    \__chemnum_write_compound_to_auxfile:nnnVVV {#1}
+    \__chemnum_write_compound_to_auxfile:nnnVVVV {#1}
       { \int_use:N \g__chemnum_main_int }
       {
         \tl_use:N \l__chemnum_pre_counter_default_tl
@@ -505,11 +518,13 @@
       }
       \l__chemnum_pre_label_default_tl
       \l__chemnum_post_label_default_tl
+      \l__chemnum_post_main_label_default_tl
       \l__chemnum_label_format_tl
     \chemnum_compound_update_property:nn {#1} {number}
     \chemnum_compound_update_property:nn {#1} {counter-representation}
     \chemnum_compound_update_property:nn {#1} {pre-label-code}
     \chemnum_compound_update_property:nn {#1} {post-label-code}
+    \chemnum_compound_update_property:nn {#1} {post-main-label-code}
     \chemnum_compound_update_property:nn {#1} {label-format}
     \seq_new:c { g__chemnum_#1_initiated_subcompounds_seq }
     \chemnum_log_main:n {#1}
@@ -713,8 +728,9 @@
 % #3: counter representation
 % #4: pre label
 % #5: post label
-% #6: label format
-\cs_new_protected:Npn \__chemnum_write_compound_to_auxfile:nnnnnn #1#2#3#4#5#6
+% #6: post main label
+% #7: label format
+\cs_new_protected:Npn \__chemnum_write_compound_to_auxfile:nnnnnnn #1#2#3#4#5#6#7
   {
     \if@filesw
       \token_if_eq_meaning:NNT \@nodocument \relax
@@ -722,12 +738,12 @@
           \iow_now:Nx \@auxout
             {
               \exp_not:N \chemnum@cmpd{#1}{#2}{#3}
-              \exp_not:n { {#4}{#5}{#6} }
+              \exp_not:n { {#4}{#5}{#6}{#7} }
             }
         }
     \fi
   }
-\cs_generate_variant:Nn \__chemnum_write_compound_to_auxfile:nnnnnn { nnnVVV }
+\cs_generate_variant:Nn \__chemnum_write_compound_to_auxfile:nnnnnnn { nnnVVVV }
 
 % #1: main ID
 % #2: sub ID
@@ -748,7 +764,11 @@
 % #1: ID
 % #2: counter value
 % #3: counter representation
-\cs_new_protected:Npn \chemnum@cmpd #1#2#3#4#5#6
+% #4: pre label
+% #5: post label
+% #6: post main label
+% #7: label format
+\cs_new_protected:Npn \chemnum@cmpd #1#2#3#4#5#6#7
   {
     \prop_if_exist:cF { g__chemnum_compound_#1_prop }
       { \prop_new:c { g__chemnum_compound_#1_prop } }
@@ -756,6 +776,14 @@
       {previous-number} {#2}
     \prop_gput:cnn { g__chemnum_compound_#1_prop }
       {previous-counter-representation} {#3}
+    \prop_gput:cnn { g__chemnum_compound_#1_prop }
+      {previous-pre-label-code} {#4}
+    \prop_gput:cnn { g__chemnum_compound_#1_prop }
+      {previous-post-label-code} {#5}
+    \prop_gput:cnn { g__chemnum_compound_#1_prop }
+      {previous-post-main-label-code} {#6}
+    \prop_gput:cnn { g__chemnum_compound_#1_prop }
+      {previous-label-format} {#7}
   }
 
 % #1: main ID
@@ -789,7 +817,8 @@
               { \msg_error:nnn   {chemnum} {compound-not-initiated} {#2} }
               { \msg_warning:nnn {chemnum} {compound-not-initiated} {#2} }
           }
-        \cmpdshowdef { #2 }
+        \bool_if:NT \l__chemnum_show_def_bool
+          { \cmpdshowdef { #2 } }
         \bool_set_false:N \l__chemnum_show_ref_bool
         \chemnum_initiate_compound:n {#2}
       }
@@ -817,7 +846,8 @@
                   {#2} {#3}
               }
           }
-        \subcmpdshowdef { #2 } { #3 }
+        \bool_if:NT \l__chemnum_show_def_bool
+          { \subcmpdshowdef { #2 } { #3 } }
         \bool_set_false:N \l__chemnum_show_ref_bool
         \chemnum_initiate_subcompound:nn {#2} {#3}
       }
@@ -825,18 +855,24 @@
       { \chemnum_define_subcompound:nn {#2} {#3} }
   }
 
+\cs_new_protected:Npn \chemnum_compound_finish:n #1
+  { \chemnum_get_compound_property:nn {#1} {post-label-code} }
+
+\cs_new:Npn \chemnum_expandable_compound_finish:n #1
+  { \chemnum_expandable_get_compound_property:nn {#1} {previous-post-label-code} }
+
 % actively write a compound:
 % #1: ID
 \cs_new_protected:Npn \chemnum_compound_write:n #1
   {
     \chemnum_get_compound_property:nn {#1} {pre-label-code}
     \group_begin:
-      \tl_if_eq:NNTF \l__chemnum_local_label_format_tl \l__chemnum_label_format_tl
-        { \chemnum_get_compound_property:nn {#1} {label-format} }
+      \bool_if:NTF \l__chemnum_compound_local_bool
         { \l__chemnum_local_label_format_tl }
-      \chemnum_get_compound_property:nn {#1} {counter-representation}
+        { \chemnum_get_compound_property:nn {#1} {label-format} }
+      { \chemnum_get_compound_property:nn {#1} {counter-representation} }
     \group_end:
-    \chemnum_get_compound_property:nn {#1} {post-label-code}
+    \chemnum_get_compound_property:nn {#1} {post-main-label-code}
   }
 
 % actively write a subcompound:
@@ -845,9 +881,13 @@
 \cs_new_protected:Npn \chemnum_subcompound_write:nn #1#2
   {
     \group_begin:
-      \chemnum_get_compound_property:nn {#1} {label-format}
-      \chemnum_get_subcompound_property:nnn {#1} {#2}
-        {counter-representation}
+      \bool_if:NTF \l__chemnum_compound_local_bool
+        { \l__chemnum_local_label_format_tl }
+        { \chemnum_get_compound_property:nn {#1} {label-format} }
+      {
+        \chemnum_get_subcompound_property:nnn {#1} {#2}
+          {counter-representation}
+      }
     \group_end:
   }
 
@@ -856,7 +896,7 @@
   {
     \chemnum_expandable_get_compound_property:nn {#1} {pre-label-code}
     \chemnum_expandable_get_compound_property:nn {#1} {counter-representation}
-    \chemnum_expandable_get_compound_property:nn {#1} {post-label-code}
+    \chemnum_expandable_get_compound_property:nn {#1} {post-main-label-code}
   }
 
 \cs_new:Npn \chemnum_expandable_subcompound_write:nn #1#2
@@ -872,11 +912,30 @@
     \chemnum_get_compound_property:nn {#1} {previous-pre-label-code}
     \group_begin:
       \chemnum_get_compound_property:nn {#1} {previous-label-format}
-      \chemnum_get_compound_property_or:nnn {#1}
-        { previous-counter-representation } { ?? \__chemnum_rerun: }
+      {
+        \chemnum_get_compound_property_or:nnn {#1}
+          { previous-counter-representation }
+          { ?? \__chemnum_rerun: }
+      }
     \group_end:
-    \chemnum_get_compound_property:nn {#1} {previous-post-label-code}
+    \chemnum_get_compound_property:nn {#1} {previous-post-main-label-code}
     
+  }
+
+% #1: main ID
+% #2: sub ID
+\cs_new_protected:Npn \chemnum_subcompound_read:nn #1#2
+  {
+    \group_begin:
+      \bool_if:NTF \l__chemnum_compound_local_bool
+        { \l__chemnum_local_label_format_tl }
+        { \chemnum_get_compound_property:nn {#1} {previous-label-format} }
+      {
+        \chemnum_get_subcompound_property_or:nnnn {#1} {#2}
+          {previous-counter-representation}
+          { ?? \__chemnum_rerun: }
+      }
+    \group_end:
   }
 
 % this is only provided for use in PDF strings:
@@ -884,7 +943,7 @@
   {
     \chemnum_expandable_get_compound_property:nn {#1} {previous-pre-label-code}
     \chemnum_expandable_get_compound_property:nn {#1} {previous-counter-representation}
-    \chemnum_expandable_get_compound_property:nn {#1} {previous-post-label-code}
+    \chemnum_expandable_get_compound_property:nn {#1} {previous-post-main-label-code}
   }
 
 \cs_new:Npn \chemnum_expandable_subcompound_read:nn #1#2
@@ -918,6 +977,7 @@
   {
     \cs_set:Npn \__chemnum_split_sub_from_main_aux:nnnw ##1##2##3##4#1##5#1##6 \q_stop
       {
+        % shis is in the compound_write command:
         \chemnum_write_main:nnnn {##1} {##2} {##3} {##4}
         \bool_if:nT
           {
@@ -938,6 +998,9 @@
                   \l__chemnum_tmpa_tl
               }
           }
+        \bool_if:NTF #2
+          { \chemnum_expandable_compound_finish:n {##4} }
+          { \chemnum_compound_finish:n {##4} }
       }
     \__chemnum_split_sub_from_main_aux:nnnw {#2} {#3} {#4} #5#1#1 \q_stop
   }
@@ -963,7 +1026,8 @@
       }
       {
         \chemnum_declare_compound:nn {#3} {#4}
-        \cmpdshowref { #4 }
+        \bool_if:NT \l__chemnum_show_ref_bool
+          { \cmpdshowref { #4 } }
         \bool_if:nF
           { #1 || \l__chemnum_sub_only_bool }
           { \chemnum_compound_write:n {#4} }
@@ -972,47 +1036,36 @@
 
 % ----------------------------------------------------------------------------
 \cs_set_protected:Npn \chemnum_show_key_def:n #1
-  {
-    \bool_if:NT \l__chemnum_show_def_bool
-      { \marginpar { \fbox { \normalfont \ttfamily #1 } } }
-  }
+  { \marginpar { \fbox { \normalfont \ttfamily #1 } } }
 
 % TODO: port this to something more expl3 like:
 \cs_set_protected:Npn \chemnum_show_key_ref:n #1
   {
-    \bool_if:NT \l__chemnum_show_ref_bool
-      {
-        \group_begin:
-          \leavevmode
-          \vbox_to_zero:n
+    \group_begin:
+      \leavevmode
+      \vbox_to_zero:n
+        {
+          \tex_vss:D
+          \hbox_overlap_right:n
             {
-              \tex_vss:D
-              \hbox_overlap_right:n
-                {
-                  \tex_vrule:D \tex_raise:D .75em
-                  \hbox:n
-                    { \underbar { \normalfont \footnotesize \ttfamily #1 } }
-                }
+              \tex_vrule:D \tex_raise:D .75em
+              \hbox:n
+                { \underbar { \normalfont \footnotesize \ttfamily #1 } }
             }
-        \group_end:
-      }
+        }
+    \group_end:
   }
 
-\cs_set_protected:Npn \chemnum_show_subkey_def:nn #1#2
-  { \chemnum_show_key_def:n { #2~(#1) } }
-
-\cs_set_protected:Npn \chemnum_show_subkey_ref:nn #1#2
-  { \chemnum_show_key_ref:n { #2 } }
-
 % ----------------------------------------------------------------------------
-\NewDocumentCommand \cmpdshowdef { m }
+\NewDocumentCommand \chemnumshowdef { m }
   { \chemnum_show_key_def:n { #1 } }
-\NewDocumentCommand \cmpdshowref { m }
+\NewDocumentCommand \chemnumshowref { m }
   { \chemnum_show_key_ref:n { #1 } }
-\NewDocumentCommand \subcmpdshowdef { mm }
-  { \chemnum_show_subkey_def:nn { #1 } { #2 } }
-\NewDocumentCommand \subcmpdshowref { mm }
-  { \chemnum_show_subkey_ref:nn { #1 } { #2 } }
+
+\NewDocumentCommand \cmpdshowdef { m } { \chemnumshowdef { #1 } }
+\NewDocumentCommand \cmpdshowref { m } { \chemnumshowref { #1 } }
+\NewDocumentCommand \subcmpdshowdef { mm } { \chemnumshowdef { #2~(#1) } }
+\NewDocumentCommand \subcmpdshowref { mm } { \chemnumshowref { #2 } }
 
 % ----------------------------------------------------------------------------
 % #1: boolean: if true register compound but don't write the label
@@ -1024,7 +1077,7 @@
   {
     \seq_set_split:NVn
       \l__chemnum_tmpc_seq
-      \l__chemnum_main_separator_tl
+      \l__chemnum_sub_separator_tl
       {#5}
     \seq_remove_duplicates:N \l__chemnum_tmpc_seq
     \seq_map_inline:Nn \l__chemnum_tmpc_seq
@@ -1074,7 +1127,8 @@
       { \chemnum_subcompound_read:nn {#4} {#5} }
       {
         \chemnum_declare_subcompound:nnn {#3} {#4} {#5}
-        \subcmpdshowref { #4 } { #5 }
+        \bool_if:NT \l__chemnum_show_ref_bool
+          { \subcmpdshowref { #4 } { #5 } }
         \bool_if:NF #1
           { \chemnum_subcompound_write:nn {#4} {#5} }
       }
@@ -1324,9 +1378,11 @@
 \NewDocumentCommand \labelcmpd { O{}m  }
   { \chemnum_cmpd:nnnn { \c_true_bool } { \c_false_bool } {#1} {#2} }
 
-% TODO: this command should be able to read at least /one/ sublabel
 \DeclareExpandableDocumentCommand \cmpdplain { m }
-  { \chemnum_expandable_compound_read:n {#1} }
+  {
+    \chemnum_expandable_compound_read:n {#1}
+    \chemnum_expandable_compound_finish:n {#1}
+  }
 
 \DeclareExpandableDocumentCommand \subcmpdplain { mm }
   { \chemnum_expandable_subcompound_read:nn {#1} {#2} }
@@ -1335,6 +1391,7 @@
   {
     \chemnum_expandable_compound_read:n {#1}
     \chemnum_expandable_subcompound_read:nn {#1} {#2}
+    \chemnum_expandable_compound_finish:n {#1}
   }
 
 % ----------------------------------------------------------------------------
@@ -1413,7 +1470,8 @@
 
 % ----------------------------------------------------------------------------
 TODO:
-- \replacecmpd um Tags in EPS Bildern zu ersetzen.
+- sort the pre-label/post-label business
+- add options for pre-counter/post-counter
 
 % ----------------------------------------------------------------------------
 new features in chemnum:
@@ -1423,7 +1481,7 @@ new features in chemnum:
 - \refcmpd[<options>]{<id>} only reference a label, similar to \cmpdplain but
   unexpandable and able to parse a list.  The same as \cmpd+
 - \cmpdproperty, \subcmpdproperty
-- \newcmpdlabelformat
+- \newcmpdcounterformat
 - logging messages
 - \cmpdshowdef, \cmpdshowref, \subcmpdshowdef, \subcmpdshowref
 - some options are grouped `compound': only those can be set with \cmpd
