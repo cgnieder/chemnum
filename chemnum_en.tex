@@ -1,5 +1,6 @@
+% arara: pdflatex: { shell: on }
 % !arara: pdflatex: { shell: on }
-% !arara: pdflatex: { shell: on }
+% arara: biber
 % arara: pdflatex
 % arara: pdflatex
 \documentclass[load-preamble+,babel-options={ngerman,british,american}]{cnltx-doc}
@@ -416,13 +417,20 @@ Every label has a number of properties.  The first property is of course its
   \item[counter-representation] The counter representation associated with the
     label.  This is the actual label that get's printed.
   \item[pre-label-code] Code to be inserted before the label is printed.
-  \item[post-main-label-code] Code to be inserted after the \emph{main} label
-    is printed.
   \item[post-label-code] Code to be inserted after the complete label is
     printed.
+  \item[pre-main-label-code] Code to be inserted before the \emph{main} label
+    is printed.
+  \item[post-main-label-code] Code to be inserted after the \emph{main} label
+    is printed.
   \item[label-format] Formatting commands for the label.  This is most likely
-    something like \cs*{bfseries}.
+    something like \cs*{bfseries}.  This is the \emph{default} format.  Unlike
+    the other properties it can be changed locally with the \option{format}
+    option on a case by case basis.
 \end{description}
+
+The properties for a label are set the when a label is declared for the first
+time.
 
 \begin{commands}
   \expandable\command{cmpdproperty}[\marg{\acs{id}}\marg{property}]
@@ -431,8 +439,8 @@ Every label has a number of properties.  The first property is of course its
 \end{commands}
 
 \begin{example}
-  \newcommand*\expandfull{\romannumeral-`0}%
-  \newcommand*\expandtwice{\detokenize\expandafter\expandafter\expandafter}%
+  \def\expandfull{\romannumeral-`0}%
+  \def\expandtwice{\detokenize\expandafter\expandafter\expandafter}%
   \ttfamily
   number: \cmpdproperty{benzene}{number}\par
   counter-representation: \cmpdproperty{benzene}{counter-representation}\par
@@ -465,12 +473,39 @@ are
   counter-representation: \subcmpdproperty{benzene}{OH}{counter-representation}
 \end{example}
 
+If you compile with the \keyis{log}{verbose} all properties of a label are
+listed in the log when it is declared.  This will typically look like this:
+
+\begin{sourcecode}
+  .................................................
+  . chemnum info: defined new compound:
+  .   ID = a
+  .   internal number = 1
+  .   label = A
+  .   pre label code = 
+  .   post label code = 
+  .   pre main label code = 
+  .   post main label code = 
+  .   format = \bfseries 
+  .................................................
+\end{sourcecode}
+
 \subsection{Initiating Labels}\label{sec:initiating-labels}
-Initiating labels is not the same as declaring them.  In fact this may only be
-useful in order to keep track of defined labels.  If you set the option
-\option{init} \chemnum\ will either issue a warning or an error (depending on
-the actual setting you chose) if a label is used \emph{that hasn't been
-  initiated}.
+Initiating labels is not the same as declaring them although it happens
+simultaneously.  When a label is initiated it its \ac{id} is added to an
+internal list.  When a label is declared all of its properties and associated
+macros are defined.  Initiating can serve two purposes:
+\begin{enumerate}
+  \item It can help in keeping track of defined labels; if you set the option
+    \option{init} \chemnum\ will either issue a warning or an error (depending 
+    on the actual setting you chose) if a label is used (and hence probably
+    declared) \emph{that hasn't been initiated}.  This can also help in
+    detecting typos in label names.
+  \item Since the labels are declared in the preamble you don't need to worry
+    about a label erroneously being declared in the table of contents.  This
+    means the variants \cs{cmpd}\sarg\ and \cs{cmpd}\code{+} shouldn't be
+    needed.
+\end{enumerate}
 
 Initiating is done via the command \cs{initcmpd}:
 \begin{sourcecode}
@@ -478,16 +513,24 @@ Initiating is done via the command \cs{initcmpd}:
 \end{sourcecode}
 You simply use all \acsp{id} you want to use like you would use them in
 \cs{cmpd}.  \cs{initcmpd} also has an optional argument that allows you to set
-options for those labels.
+options for those labels.  Legal options are the same as for \cs{cmpd}.
+
+Remember: \cs{initcmpd} will both initiate the labels \emph{and} declare the
+labels!
 
 \section{Overview over the Available Options}\label{sec:overv-over-avail-1}
 Except for the \option{version} option all of the following options are either
 set as options to \cs{cmpd} or \cs{initcmpd} directly or via
 \cs{setchemnum}\marg{options}, each time as a comma separated list of
-key/value pairs.  Options that can be set via \cs{setchemnum} are marked with
-\module{global}, those that only have an effect when used with \cs{cmpd} and
-friends are marked with \module{compound}.  Those marked with \module{all} can
-be set either way.
+key/value pairs.  Options that can only be set via \cs{setchemnum} are marked
+with \module{general}, those that only have an effect when used with \cs{cmpd} and
+friends are marked with \module{cmpd}.  Those marked with \module{both} can
+be set either way.  The options affecting the compounds are further divided in
+two classes: I named them global \module*{(g)} and local \module*{(l)}. Options
+from the global class are set when a label is declared the first time and then
+are a fixed property of the corresponding label.  Options from the local class
+can be changed at each instance of a label and will then only be active for
+the one instance.
 
 A few of the options only have an effect when used with the \cs{replacecmpd}
 command.  They are marked with \module{replace}.
@@ -496,78 +539,80 @@ command.  They are marked with \module{replace}.
   \keychoice{version}{0,1}\Default{1}
     Choose the package version.  This option can only be set as a package
     option!
-  \keyval{counter-within}{counter}\Module{global}
+  \keyval{counter-within}{counter}\Module{general}
     Reset the compound numbers when \meta{counter} is stepped.
   \keychoice{counter-format}{arabic,alph,Alph,roman,Roman,greek,Greek}%
-    \Module{all}\Default{arabic}
+    \Module{both (g)}\Default{arabic}
     The format of the number associated with the main compounds.
   \keychoice{sub-counter-format}{arabic,alph,Alph,roman,Roman,greek,Greek}%
-    \Module{all}\Default{alph}
+    \Module{both (g)}\Default{alph}
     The format of the number associated with the sub compounds.
-  \keybool{compress}\Module{all}\Default{false}
+  \keybool{compress}\Module{both (l)}\Default{false}
     If set to true a list of sublabels is compressed, \ie,
     \cmpd[compress=false]{q.{one,three,four,five}} becomes
     \cmpd{q.{one,three,four,five}}.
-  \keyval{pre-label-code}{code}\Module{compound}\Default
+  \keyval{pre-label-code}{code}\Module{cmpd (g)}\Default
     Code to be inserted before a label.
-  \keyval{post-label-code}{code}\Module{compound}\Default
+  \keyval{post-label-code}{code}\Module{cmpd (g)}\Default
     Code to be inserted after a label.
-  \keyval{main-sub-sep}{code}\Module{all}\Default{.}
+  \keyval{main-sub-sep}{code}\Module{general}\Default{.}
     The separator symbol that is used in \cs{cmpd} to separate the \meta{main
       \acs{id}} from a \meta{sub \acs{id}}.
-  \keyval{format}{formatting commands}\Module{all}\Default{\cs*{bfseries}}
+  \keyval{format}{formatting commands}\Module{both (l)}\Default{\cs*{bfseries}}
     The default format of the labels.
-  \keyval{list-label-sep}{code}\Module{all}\Default{,}
+  \keyval{list-label-sep}{code}\Module{general}\Default{,}
     The separator that is used to separate different \meta{main \acsp{id}} in
     \cs{cmpd}.
+  \keyval{sub-list-label-sep}{code}\Module{general}\Default{,}
+    The marker that is used to split an input list of sublabels.
   \keyval{list-sep-two}{code}%
-    \Module{all}\Default{\visualizespaces{\GetTranslation{chemnum-sep-two}}}
+    \Module{general}\Default{\visualizespaces{\GetTranslation{chemnum-sep-two}}}
     The output separator between labels in a list that contains of two items.
-  \keyval{list-sep-more}{code}\Module{all}\Default{\visualizespaces{, }}
+  \keyval{list-sep-more}{code}\Module{general}\Default{\visualizespaces{, }}
     The output separator between labels in a list that contains of more than
     two items.
   \keyval{list-sep-last-two}{code}%
-    \Module{all}\Default{\visualizespaces{\GetTranslation{chemnum-sep-last-two}}}
+    \Module{general}\Default{\visualizespaces{\GetTranslation{chemnum-sep-last-two}}}
     The output separator between the last two labels in a list that contains
     of more than two items.
-  \keybool{sub-only}\Module{compound}\Default{false}
+  \keybool{sub-only}\Module{cmpd (l)}\Default{false}
     If true the command \cs{cmpd} will only print sublabels but no main
     labels.
-  \keybool{sub-all}\Module{compound}\Default{false}
+  \keybool{sub-all}\Module{cmpd (l)}\Default{false}
     If true the command \cs{cmpd} will print all sublabels belonging to the
     corresponding main label.
-  \keyval{sub-list-sep-two}{code}\Module{all}\Default{,}
+  \keyval{sub-list-sep-two}{code}\Module{both (l)}\Default{,}
     The output separator between labels in a sublist that contains of two
     items.
-  \keyval{sub-list-sep-more}{code}\Module{all}\Default{,}
+  \keyval{sub-list-sep-more}{code}\Module{both (l)}\Default{,}
     The output separator between labels in a sublist that contains of more
     than two items.
-  \keyval{sub-list-sep-last-two}{code}\Module{all}\Default{,}
+  \keyval{sub-list-sep-last-two}{code}\Module{both (l)}\Default{,}
     The output separator between the last two labels in a sublist that
     contains of more than two items.
-  \keyval{sub-list-sep-range}{code}\Module{all}\Default{--}
+  \keyval{sub-list-sep-range}{code}\Module{both (l)}\Default{--}
     The output separator between two labels in a sublist denoting a range.
     This is only used when the option \option{compress} is active.
-  \keybool{replace-auto}\Module{global}\Default{true}
+  \keybool{replace-auto}\Module{general}\Default{true}
     When set to true this adds an incremented integer to the replacement tag.
-  \keyval{replace-tag}{text}\Module{global}\Default{TMP}
+  \keyval{replace-tag}{text}\Module{general}\Default{TMP}
     The default replacement tag.
   \keyval{tag}{text}\Module{replace}\Default{TMP\meta{number}}
     The local replacement tag.
-  \keyval{replace-style}{code}\Module{global}\Default{\cs*{sffamily}}
+  \keyval{replace-style}{code}\Module{general}\Default{\cs*{sffamily}}
     Additional \TeX\ code that it placed before the \cs{cmpd} command in the
     replacement.
   \keyval{style}{code}\Module{replace}\Default{\cs*{sffamily}}
     Local additional \TeX\ code that it placed before the \cs{cmpd} command in
     the replacement.
   \keychoice{replace-pos}{\marg{\TeX\ pos}\marg{\acs{ps}
-      pos}}\Module{global}\Default{bb}
+      pos}}\Module{general}\Default{bb}
     Options for \pkg{psfrag}'s \cs{psfrag}.
   \keychoice{pos}{\marg{\TeX\ pos}\marg{\acs{ps}
       pos}}\Module{replace}\Default{bb}
     Local options for \pkg{psfrag}'s \cs{psfrag}.
   \keychoice{init}{\default{true},main,false,strict,main-strict}%
-    \Module{global}\Default{false}
+    \Module{general}\Default{false}
     Determines how labels have to be initiated.  \code{false} means that
     labels are initiated when they're used the first time in the text.
     \code{true} means that labels should be initiated in the preamble with
@@ -575,14 +620,14 @@ command.  They are marked with \module{replace}.
     labels.  \code{strict} means that if an un-initiated label is used an
     error is thrown.  \code{main-strict} is the same as \code{strict} but only
     for main labels.
-  \keychoice{log}{\default{true},false,silent,verbose}\Module{global}\Default{false}
+  \keychoice{log}{\default{true},false,silent,verbose}\Module{general}\Default{false}
     Determines how the declaration of the labels will be logged.  \code{false}
     means that no information is written to the \code{.log} file.  \code{true}
     means that basic information is written to the \code{.log} file when a
     label or a sublabel is declared.  \code{silent} is an alias of
     \code{true}.  \code{verbose} means that detailed information is written to
     the \code{.log} file when a label or a sublabel is declared.
-  \keychoice{show-keys}{\default{true},false,def,ref}\Module{global}\Default{false}
+  \keychoice{show-keys}{\default{true},false,def,ref}\Module{general}\Default{false}
     This option will write visual hints when a label is defined (choices
     \code{true} or \code{def}) or when a label is referenced (choices
     \code{true} or \code{ref}).
@@ -601,10 +646,10 @@ The counter representation used for the main and the sublabels can be changed
 using the following options:
 \begin{options}
   \keychoice{counter-format}{arabic,alph,Alph,roman,Roman,greek,Greek}%
-    \Default{arabic}
+    \Module{general}\Default{arabic}
     The format of the number associated with the main compounds.
   \keychoice{sub-counter-format}{arabic,alph,Alph,roman,Roman,greek,Greek}%
-    \Default{alph}
+    \Module{general}\Default{alph}
     The format of the number associated with the sub compounds.  
 \end{options}
 
@@ -693,7 +738,7 @@ compounds:
 As you will have noticed by now labels are typeset with a bold face with the
 default setting of \chemnum.  This can be changed:
 \begin{options}
-  \keyval{format}{formatting commands}\Default{\cs*{bfseries}}
+  \keyval{format}{formatting commands}\Module{both (l)}\Default{\cs*{bfseries}}
     The default format of the labels.
 \end{options}
 
@@ -723,13 +768,13 @@ labels since they belong to a label's properties.
 Other options are the customization of the list separators:
 \begin{options}
   \keyval{list-sep-two}{code}%
-    \Default{\visualizespaces{\GetTranslation{chemnum-sep-two}}}
+    \Module{general}\Default{\visualizespaces{\GetTranslation{chemnum-sep-two}}}
     The output separator between labels in a list that contains of two items.
-  \keyval{list-sep-more}{code}\Default{\visualizespaces{, }}
+  \keyval{list-sep-more}{code}\Module{general}\Default{\visualizespaces{, }}
     The output separator between labels in a list that contains of more than
     two items.
   \keyval{list-sep-last-two}{code}%
-    \Default{\visualizespaces{\GetTranslation{chemnum-sep-last-two}}}
+    \Module{general}\Default{\visualizespaces{\GetTranslation{chemnum-sep-last-two}}}
     The output separator between the last two labels in a list that contains
     of more than two items.
 \end{options}
@@ -763,7 +808,7 @@ method is usually used:
 Figure~\ref{fig:scheme-tmp-tags} shows a scheme with temporary tags.  It is
 produced with the following code where the class \cls{standalone} has been
 used to get the figure only:
-\begin{example}[compile,exe-with={--shell-escape},runs=1,float,caption={A scheme with
+\begin{example}[compile,exe-with={--shell-escape},runs=1,float=htbp,caption={A scheme with
   temporary tags.\label{fig:scheme-tmp-tags}}]
   % code for figure 1
   \documentclass{standalone}
@@ -775,7 +820,7 @@ used to get the figure only:
 
 The tags now can be replaced with labels.  The result is shown in
 figure~\ref{fig:scheme-tmp-tags-replaced}.
-\begin{example}[compile,exe-with={--shell-escape},runs=1,float,caption={A scheme with
+\begin{example}[compile,exe-with={--shell-escape},runs=1,float=htbp,caption={A scheme with
   temporary tags replaced with labels.\label{fig:scheme-tmp-tags-replaced}}]
   % code for figure 2
   \documentclass{standalone}
@@ -794,20 +839,20 @@ package and its command I refer to its documentation.
 As you can see the labels are printed sans serif.  This setting can of course
 be changed.  The complete list of options is this:
 \begin{options}
-  \keybool{replace-auto}\Module{global}\Default{true}
+  \keybool{replace-auto}\Module{general}\Default{true}
     When set to true this adds an incremented integer to the replacement tag.
-  \keyval{replace-tag}{text}\Module{global}\Default{TMP}
+  \keyval{replace-tag}{text}\Module{general}\Default{TMP}
     The default replacement tag.
   \keyval{tag}{text}\Module{replace}\Default{TMP\meta{number}}
     The local replacement tag.
-  \keyval{replace-style}{code}\Module{global}\Default{\cs*{sffamily}}
+  \keyval{replace-style}{code}\Module{general}\Default{\cs*{sffamily}}
     Additional \TeX\ code that it placed before the \cs{cmpd} command in the
     replacement.
   \keyval{style}{code}\Module{replace}\Default{\cs*{sffamily}}
     Local additional \TeX\ code that it placed before the \cs{cmpd} command in
     the replacement.
   \keychoice{replace-pos}{\marg{\TeX\ pos}\marg{\acs{ps}
-      pos}}\Module{global}\Default{bb}
+      pos}}\Module{general}\Default{bb}
     Options for \pkg{psfrag}'s \cs{psfrag}.
   \keychoice{pos}{\marg{\TeX\ pos}\marg{\acs{ps}
       pos}}\Module{replace}\Default{bb}
@@ -820,7 +865,7 @@ figure~\ref{fig:scheme-bla-tags} you can specify the \option{tag} option to
 this.  It also demonstrates that you can of course use sublabels in the
 \cs{replacecmpd} command.
 
-\begin{example}[compile,exe-with={--shell-escape},runs=1,float,caption={A scheme with
+\begin{example}[compile,exe-with={--shell-escape},runs=1,float=htbp,caption={A scheme with
   arbitrary tags.\label{fig:scheme-bla-tags}}]
   % code for figure 3
   \documentclass{standalone}
@@ -841,15 +886,15 @@ optional arguments which determine the positioning of the \TeX\ box with
 respect to the \acs{ps} box that is replaced.  This is described in
 \pkg{psfrag}'s documentation.
 
-\begin{example}[compile,exe-with={--shell-escape},runs=1,float,caption={A scheme with
+\begin{example}[compile,exe-with={--shell-escape},runs=1,float=htbp,caption={A scheme with
   arbitrary tags replaced with labels.\label{fig:scheme-bla-tags-replaced}}]
   % code for figure 4
   \documentclass{standalone}
   \usepackage{graphicx,auto-pst-pdf,chemnum}
   \begin{document}
     \setchemnum{replace-style=\itshape}
-    \replacecmpd[tag=blah]{main}% replaces TMP1
-    \replacecmpd[tag=blub]{main.sub}% replaces TMP2
+    \replacecmpd[tag=blah]{main}% replaces blah
+    \replacecmpd[tag=blub]{main.sub}% replaces blub
     \includegraphics{scheme-bla.ps}
   \end{document}
 \end{example}
@@ -861,11 +906,11 @@ part of a label name: the comma \code{,} and the dot \code{.}.  You can change
 them with options:
 
 \begin{options}
-  \keyval{list-label-sep}{token}\Default{,}
+  \keyval{list-label-sep}{token}\Module{general}\Default{,}
     The marker that is used to split an input list of main labels.
-  \keyval{sub-list-label-sep}{token}\Default{,}
+  \keyval{sub-list-label-sep}{token}\Module{general}\Default{,}
     The marker that is used to split an input list of sublabels.
-  \keyval{main-sub-sep}{token}\Default{.}
+  \keyval{main-sub-sep}{token}\Module{general}\Default{.}
     The marker that divides sublabels from main labels.
 \end{options}
 
@@ -896,7 +941,7 @@ If you find your language missing or the translation to your language to be
 wrong please write me an email and I'll add your language or fix the wrong
 translation.
 
-\begin{table}[hbp]
+\begin{table}[htbp]
   \centering
   \caption{Available languages}
   \label{tab:languages}
@@ -954,14 +999,14 @@ translation.
 If you want information on the labels you have defined you can exploit the
 following options:
 \begin{options}
-  \keychoice{log}{\default{true},false,silent,verbose}\Module{global}\Default{false}
+  \keychoice{log}{\default{true},false,silent,verbose}\Module{general}\Default{false}
     Determines how the declaration of the labels will be logged.  \code{false}
     means that no information is written to the \code{.log} file.  \code{true}
     means that basic information is written to the \code{.log} file when a
     label or a sublabel is declared.  \code{silent} is an alias of
     \code{true}.  \code{verbose} means that detailed information is written to
     the \code{.log} file when a label or a sublabel is declared.
-  \keychoice{show-keys}{\default{true},false,def,ref}\Module{global}\Default{false}
+  \keychoice{show-keys}{\default{true},false,def,ref}\Module{general}\Default{false}
     This option will write visual hints when a label is defined (choices
     \code{true} or \code{def}) or when a label is referenced (choices
     \code{true} or \code{ref}).
