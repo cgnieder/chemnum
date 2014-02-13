@@ -4,13 +4,13 @@
 % arara: pdflatex
 % arara: pdflatex
 \documentclass[load-preamble+,babel-options={ngerman,british,american}]{cnltx-doc}
-\usepackage[version=1]{chemnum}
+\usepackage{chemnum}
 \setcnltx{
   package = chemnum ,
-  info    = \chemnum\ revisited ,
+  info    = numbering of chemical compounds ,
   authors = Clemens Niederberger ,
   email   = contact@mychemistry.eu ,
-  url     = https://bitbucket.org/cgnieder/chemnum/ ,
+  url     = https://github.com/cgnieder/chemnum/ ,
   add-cmds = {
     chemnumshowdef,
     chemnumshowref,
@@ -34,6 +34,7 @@
   } ,
   add-silent-cmds = {
     arrow,
+    bottomrule,
     ch,chemfig,chemname,
       CNlabel,CNlabelnoref,CNlabelsub,CNlabelsubnoref,
       CNref,CNrefsub,CNsubnoref,
@@ -42,10 +43,10 @@
     expandfull,expandtwice,
     fcite,
     includegraphics,
-    marginnote,
+    marginnote, midrule,
     NewDocumentCommand,
-    schemestart,schemestop,setatomsep ,
-    theffbibliography ,
+    schemestart,schemestop,setatomsep,
+    theffbibliography, toprule
   } ,
   index-setup = { othercode=\footnotesize,level=\addsec },
   makeindex-setup = { columns=3,columnsep=1em } ,
@@ -122,17 +123,19 @@ complete re-write of \chemnum\ where I tried to achieve several points:
 \end{itemize}
 
 Although the syntax seems more or less the same at first sight quite some
-changes have been made that make version~1 incompatible with version~0.  This
-is why version~0 is still available through the option \keyis{version}{0}.  If
-you load the package with
-\begin{sourcecode}
-  \usepackage[version=0]{chemnum}
-\end{sourcecode}
-version 0.6b from June~5th~2013 will be used.  This version is not documented
-in the document you're reading right now.  Older manuals are still available
+changes have been made that make version~1 incompatible with version~0.
+% This
+% is why version~0 is still available through the option \keyis{version}{0}.  If
+% you load the package with
+% \begin{sourcecode}
+%   \usepackage[version=0]{chemnum}
+% \end{sourcecode}
+% version 0.6b from June~5th~2013 will be used.  This version is not documented
+% in the document you're reading right now.
+Older versions are still available
 from websites such as \website{ctanhg.scharrer-online.de} or
 \securewebsite{bitbucket.org/cgnieder/chemnum}.  You can also email me for an
-older manual.
+older version.
 
 Many commands have got a new name! The most important ones are:
 \begin{itemize}
@@ -147,8 +150,8 @@ before.
 Please note that this overall change does not mean that version~1 is version~0
 declared stable.  It is very likely that version~1 will now have quite a
 number of bugs to be fixed and probably missing features, too.  So I'd be very
-glad to receive feedback either on \chemnum\'s homepage
-\securewebsite{bitbucket.org/cgnieder/chemnum} or via email to
+glad to receive feedback either on \chemnum's homepage
+\securewebsite{github.com/cgnieder/chemnum} or via email to
 \email{contact@mychemistry.eu}.
 
 \section{Overview over the Available Commands}\label{sec:overv-over-avail}
@@ -156,40 +159,42 @@ glad to receive feedback either on \chemnum\'s homepage
 \begin{commands}
   \command{cmpd}[\sarg\code{+}\oarg{options}\marg{list of \acsp{id}}]
     The main command for creating and refering to compound labels.  This
-    command is described in detail in section~\ref{sec:deta-comp-labels}.
+    command is described in detail in section~\ref{sec:deta-comp-labels}.  For
+    most people this will be the only command they need.
   \command{refcmpd}[\oarg{options}\marg{\acs{id}}]
-    This command only refers to a already defined label but does not define a
+    This command only refers to an already defined label but does not define a
     label itself.  This is an alias of \cs{cmpd}\code{+}.
   \command{labelcmpd}[\oarg{options}\marg{\acs{id}}]
     This command only defines a new label but does not print it.  This is an
     alias of \cs{cmpd}\sarg.
   \expandable\command{cmpdplain}[\marg{\acs{id}}]
     Reads a label and writes it expandably without formatting.  It is not able
-    to parse a list.  Its sole purpose is usage in pdfstrings
-    (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{pdfstring}).  This command is
-    described in section~\ref{sec:deta-comp-labels}.
+    to parse a list.  Its sole purpose is usage in \acs{pdf} strings
+    (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{\acs{pdf} string}).  This
+    command is described in section~\ref{sec:deta-comp-labels}.
   \expandable\command{subcmpdplain}[\marg{main \acs{id}}\marg{sub \acs{id}}]
     Reads a sublabel and writes it expandably without formatting.  It is not
     able to parse a list.  Its sole purpose is usage in pdfstrings
-    (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{pdfstring}).  This command is
-    described in section~\ref{sec:deta-comp-labels}.
+    (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{\acs{pdf} string}).  This
+    command is described in section~\ref{sec:deta-comp-labels}.
   \expandable\command{submaincmpdplain}[\marg{main \acs{id}}\marg{sub \acs{id}}]
-    Reads a main and a sublabel and writes them expandably without formatting.
-    It is not able to parse a list.  Its sole purpose is usage in pdfstrings
-    (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{pdfstring}).  This command is
-    described in section~\ref{sec:deta-comp-labels}.
+    Reads a main label and a sublabel and writes them expandably without
+    formatting.  It is not able to parse a list.  Its sole purpose is usage in
+    \acs{pdf} strings (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{\acs{pdf}
+      string}). This command is described in
+    section~\ref{sec:deta-comp-labels}.
   \command{initcmpd}[\oarg{options}\marg{list of \acsp{id}}]
     Initiate compound labels.  This command can only be used in the preamble.
     It is desribed in section~\ref{sec:deta-comp-labels}.
   \expandable\command{cmpdproperty}[\marg{\acs{id}}\marg{property}]
     Get the associated property \meta{property} of compound
-    \meta{\acs{id}}. This command is described in detail in
+    \meta{\acs{id}}. This command is described in
     section~\ref{sec:deta-comp-labels}.
   \expandable\command{subcmpdproperty}[\marg{main \acs{id}}\marg{sub
     \acs{id}}\marg{property}]
     Get the associated property \meta{property} of subcompound \meta{sub
       \acs{id}} of compound \meta{main \acs{id}}.  This command is described
-    in detail in section~\ref{sec:deta-comp-labels}.
+    in section~\ref{sec:deta-comp-labels}.
   \command{newcmpdcounterformat}[\marg{name}\marg{command}]
     Makes the label format \meta{name} known to \chemnum.  \meta{command}
     needs to be a command that takes an integer number as argument and should
@@ -227,8 +232,8 @@ glad to receive feedback either on \chemnum\'s homepage
 The main command of this package is this one:
 \begin{commands}
   \command{cmpd}[\marg{\acs{id}}]
-    When \meta{compound name} is used the first time, the label is created,
-    saved (= declared) and printed.  Each further use just prints the label.
+    When \meta{\acs{id}} is used the first time, the label is created, saved
+    (= declared) and printed.  Each further use just prints the label.
 \end{commands}
 
 \begin{example}
@@ -242,7 +247,7 @@ If it is necessary to declare a compound without printing the label it is
 possible with
 \begin{commands}
   \command{cmpd}[\sarg\marg{\acs{id}}]
-    Declare the label but don't print anything.
+    Declare the label \meta{\acs{id}} but don't print anything.
 \end{commands}
 
 \begin{example}
@@ -252,8 +257,8 @@ possible with
 \end{example}
 
 You can pretty much use what you like for a label name except for the
-separator symbols (see section~\ref{sec:chang-input-mark}).  Be careful with
-blanks though!  Leading and trailing spaces are ignored, spaces at other
+separator symbols (see also section~\ref{sec:chang-input-mark}).  Be careful
+with blanks though!  Leading and trailing spaces are ignored, spaces at other
 places are not.  It's probably best not to use blanks in label names at all.
 
 \begin{example}[add-sourcecode-options={showspaces=true}]
@@ -262,7 +267,7 @@ places are not.  It's probably best not to use blanks in label names at all.
   \cmpd{a  a }, \cmpd{ a  a}, and \cmpd{ a  a }.
 \end{example}
 
-\subsection{Sublabel}\label{sec:sublabel}
+\subsection{Sublabels}\label{sec:sublabel}
 If you want a label like \cmpd{a.one}, you need to use the following syntax:
 \begin{commands}
   \command{cmpd}[\Marg{\meta{main \acs{id}}.\meta{sub \acs{id}}}]
@@ -270,7 +275,7 @@ If you want a label like \cmpd{a.one}, you need to use the following syntax:
       \acs{id}} varies.  This syntax means that the point \code{.}
     \emph{cannot} be a part of \meta{main \acs{id}} or \meta{sub \acs{id}}.
     Instead of the point you also can use another symbol, see
-    section~\ref{sec:chang-input-mark}.
+    section~\ref{sec:chang-input-mark} for details.
 \end{commands}
 
 \begin{example}
@@ -289,7 +294,7 @@ The same way the main name of combined labels can be used solely.
   \cmpd{f} and \cmpd{g}
 \end{example}
 
-How you can create a label like \cmpd{f.{one,two}} is explained in
+How you can create a combined label like \cmpd{f.{one,two}} is explained in
 section~\ref{sec:lists-rang-subl}.
 
 \subsection{Lists}\label{sec:lists}
@@ -300,8 +305,8 @@ labels.  The right description would be something like:
     Treats each entry of the list as described before.
 \end{commands}
 This means that with default settings the comma can't be part of the label
-name unless hidden in braces.  As separator can be used another symbol, too,
-see section~\ref{sec:chang-input-mark}.
+name unless hidden in braces.  As separator another symbol can be used, too,
+see section~\ref{sec:chang-input-mark} for details.
 
 \begin{example}
   More than one label can be put inside \cs{cmpd}, separated by commas.  Then
@@ -309,7 +314,7 @@ see section~\ref{sec:chang-input-mark}.
 \end{example}
 The Harvard comma (see section~\ref{sec:lang-depend-sett}) in \code{, and}
 between \cmpd{e} and \cmpd{g.two} suggests that there are options to customize
-the list, see section~\ref{sec:formatting-labels}.
+the list, see section~\ref{sec:formatting-labels} for more on this.
 
 \subsection{Lists and Ranges of Sublabels}\label{sec:lists-rang-subl}
 Sometimes it can be useful to display a label with a list or a range of
@@ -323,7 +328,7 @@ The syntax is rather intuitive -- you just input a list of sublabels:
   list of labels: \cmpd{q.one, q.two, q.three, q.four, q.five}\par
   label with list of sublabels: \cmpd{q.{one,two,three,four,five}}
 \end{example}
-Since the sublist is input with a comma in the default setting, you have to
+Since the sublist is input with a comma in the default setting you have to
 put them into braces.  If you add a list of sublabels to a main label they
 will always be printed in the order the sublabels have been declared and not
 in the order they're input in the list:
@@ -338,7 +343,7 @@ in the order they're input in the list:
 Using this syntax you also can create ranges of sublabels.  For this you
 enable the option \option{compress}.  Or rather: this is the default setting.
 If you don't want compressed sublabels you have to disable the option like in
-the previous example.
+the previous examples.
 \begin{example}[side-by-side]
   \cmpd{q.{two,four,three}} \par
   \cmpd{q.{five,one,three,four}} \par
@@ -349,16 +354,23 @@ Obviously you can't use a comma as part of a sublabel name.  You can change
 the input marker, though.  See section~\ref{sec:overv-over-avail-1} for
 available options.
 
+Sometimes it can be useful to get only the sublabel without the main label.
+This is achieved with the option \option{sub-only}:
+
 \begin{example}
   % uses packages `chemfig', `chemformula' and `booktabs'
   \setatomsep{2em}%
   \chemname{\chemfig{*6(=-=-(-R)=-)}}{\cmpd{benzene.{H,Me,OH,NH2}}}
+  \quad
   \begin{tabular}{lll}
-                                 & \ch{-R}   & Name \\\midrule
-    \cmpd[sub-only]{benzene.H}   & \ch{-H}   & Benzene \\
-    \cmpd[sub-only]{benzene.Me}  & \ch{-CH3} & Toluene \\
-    \cmpd[sub-only]{benzene.OH}  & \ch{-OH}  & Phenol \\
-    \cmpd[sub-only]{benzene.NH2} & \ch{-NH2} & Phenylamine (Aniline)
+    \toprule
+                                   & \ch{-R}   & Name \\
+    \midrule
+      \cmpd[sub-only]{benzene.H}   & \ch{-H}   & Benzene \\
+      \cmpd[sub-only]{benzene.Me}  & \ch{-CH3} & Toluene \\
+      \cmpd[sub-only]{benzene.OH}  & \ch{-OH}  & Phenol \\
+      \cmpd[sub-only]{benzene.NH2} & \ch{-NH2} & Phenylamine (Aniline) \\
+    \bottomrule
   \end{tabular}
 \end{example}
 
@@ -393,10 +405,9 @@ the \code{aux} file.  The command \cs{refcmpd}\oarg{options}\marg{\acs{id}}
 only reads those information but does not declare a label.  There is also a
 command which does the opposite: it declares a label if it hasn't been
 declared before but will not print the corresponding label:
-\cs{labelcmpd}\oarg{options}\marg{\acs{id}}.
-
-Both commands have shortcut versions: \cs{cmpd}\code{+} is the same as
-\cs{refcmpd}, \cs{cmpd}\sarg\ is the same as \cs{labelcmpd}.
+\cs{labelcmpd}\oarg{options}\marg{\acs{id}}.  Both commands have shortcut
+versions: \cs{cmpd}\code{+} is the same as \cs{refcmpd}, \cs{cmpd}\sarg\ is
+the same as \cs{labelcmpd}.
 
 Another command available is \cs{cmpdplain}\marg{\acs{id}}.  This command is
 similar to \cs{refcmpd}.  There are a few important differences, though:
@@ -407,6 +418,26 @@ expandable.  This means it can be used to get labels in \ac{pdf} bookmarks.
 It's equivalent \cs{subcmpdplain}\marg{main \acs{id}}\marg{sub \acs{id}} does
 the same for sublabels.  A third sibling, \cs{submaincmpdplain}\marg{main
   \acs{id}}\marg{sub \acs{id}}, writes both the main and the sublabel.
+
+I should also say a few words on lists of labels.  A usage like
+\verbcode+\cmpd{a,b,c,e}+ will be printed as a \emph{sorted} list.  The order
+will be in the order \emph{in which the labels have been defined}.  The above
+usage gives \cmpd{a,b,c,e}.  The same thing holds for the order of sublabels
+of a compound: the usage \verbcode+\cmpd{q.{one,three,four,two,five}}+ gives
+\cmpd{q.{one,three,four,two,five}} or
+\cmpd[compress=false]{q.{one,three,four,two,five}} (depending on the
+\option{compress} option).  Be careful if you have a list with several
+occurences of the same main label but with different sublabels:
+\begin{example}[side-by-side]
+  \cmpd{q.five,q.two} \par
+  \cmpd{q.two,q.five}
+\end{example}
+Indeed: since the main list gets kind of sorted this may actually lead to
+unordered lists of such labels\footnote{This is something to be fixed
+  (hopefully) in some future version of \chemnum.}.
+
+A last thing on lists: duplicate entries (\ie, \emph{exact} duplicates) will
+be removed.
 
 \subsection{Properties of Compound Labels}\label{sec:prop-comp-labels}
 
@@ -492,9 +523,9 @@ listed in the log when it is declared.  This will typically look like this:
 
 \subsection{Initiating Labels}\label{sec:initiating-labels}
 Initiating labels is not the same as declaring them although it happens
-simultaneously.  When a label is initiated it its \ac{id} is added to an
-internal list.  When a label is declared all of its properties and associated
-macros are defined.  Initiating can serve two purposes:
+simultaneously.  When a label is \emph{initiated} its \ac{id} is added to an
+internal list.  When a label is \emph{declared} all of its properties and
+associated macros are defined.  Initiating can serve two purposes:
 \begin{enumerate}
   \item It can help in keeping track of defined labels; if you set the option
     \option{init} \chemnum\ will either issue a warning or an error (depending 
@@ -519,7 +550,8 @@ Remember: \cs{initcmpd} will both initiate the labels \emph{and} declare the
 labels!
 
 \section{Overview over the Available Options}\label{sec:overv-over-avail-1}
-Except for the \option{version} option all of the following options are either
+% Except for the \option{version} option
+All of the following options are either
 set as options to \cs{cmpd} or \cs{initcmpd} directly or via
 \cs{setchemnum}\marg{options}, each time as a comma separated list of
 key/value pairs.  Options that can only be set via \cs{setchemnum} are marked
@@ -536,9 +568,9 @@ A few of the options only have an effect when used with the \cs{replacecmpd}
 command.  They are marked with \module{replace}.
 
 \begin{options}
-  \keychoice{version}{0,1}\Default{1}
-    Choose the package version.  This option can only be set as a package
-    option!
+  % \keychoice{version}{0,1}\Default{1}
+  %   Choose the package version.  This option can only be set as a package
+  %   option!
   \keyval{counter-within}{counter}\Module{general}
     Reset the compound numbers when \meta{counter} is stepped.
   \keychoice{counter-format}{arabic,alph,Alph,roman,Roman,greek,Greek}%
@@ -706,11 +738,12 @@ than the ones already provided they can be added with this command:
 The \code{arabic} and \code{alph} counter settings for example could have been
 defined like this:
 \begin{sourcecode}
-  \makeatletter
   \newcmpdcounterformat{arabic}{\@arabic}
   \newcmpdcounterformat{alph}  {\@alph}
-  \makeatother
 \end{sourcecode}
+This is actually not true: since \chemnum\ is written in expl3 the
+corresponding \cs*{int\_to\_\meta{\ldots}} functions have been used.
+
 Although the name of the command suggests otherwise it can be used to
 overwrite the default definitions.
 

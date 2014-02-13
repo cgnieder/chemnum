@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------
-chemnum v1.0rc1 2014/01/31
+chemnum v1.0rc2 2014/02/13
 
   a comprehensive approach for the numbering of chemical compounds
 
@@ -10,7 +10,7 @@ Web:
   v1.* https://github.com/cgnieder/chemnum
 E-Mail: contact@mychemistry.eu
 --------------------------------------------------------------------------
-Copyright 2013 Clemens Niederberger
+Copyright 2011-2014 Clemens Niederberger
 
 This work may be distributed and/or modified under the
 conditions of the LaTeX Project Public License, either version 1.3
@@ -28,10 +28,9 @@ If you have any ideas, questions, suggestions or bugs to report,
 please feel free to contact me.
 --------------------------------------------------------------------------
 This work consists of the files
-- chemnum.sty, chemnum0.sty, chemnum1.sty
+- chemnum.sty,
 - chemnum_en.tex, chemnum_en.pdf
 - README
 --------------------------------------------------------------------------
 Version 1 is a complete re-write from scratch of the `chemnum' package.
-The last version 0.* will still be available through a package option
 --------------------------------------------------------------------------
