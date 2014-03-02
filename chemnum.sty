@@ -1,6 +1,6 @@
 % ----------------------------------------------------------------------------
-\def\chemnum@date{2014/02/13}
-\def\chemnum@version{1.0rc2}
+\def\chemnum@date{2014/03/02}
+\def\chemnum@version{1.0rc3}
 \def\chemnum@info{a comprehensive approach for the numbering of chemical compounds}
 
 \RequirePackage{expl3}[2013/07/14]
@@ -149,11 +149,13 @@
 % ----------------------------------------------------------------------------
 % variants of kernel functions:
 \cs_generate_variant:Nn \prop_gput:Nnn         { Nnx , cnx , cnV }
+\cs_generate_variant:Nn \prop_put:Nnn          { NVV , NVx }
 \cs_generate_variant:Nn \quark_if_no_value:nTF { V }
 \cs_generate_variant:Nn \quark_if_no_value:nF  { V }
 \cs_generate_variant:Nn \seq_set_split:Nnn     { NV }
 \cs_generate_variant:Nn \seq_use:Nnnn          { NVVV }
 \cs_generate_variant:Nn \tl_if_eq:nnF          { Vx }
+\cs_generate_variant:Nn \tl_if_in:nnTF         { VV }
 
 % ----------------------------------------------------------------------------
 % temporary variables:
@@ -246,6 +248,7 @@
 \bool_new:N \l__chemnum_log_verbose_bool
 \bool_new:N \l__chemnum_compress_subcompounds_bool
 \bool_set_true:N \l__chemnum_compress_subcompounds_bool
+\bool_new:N \l__chemnum_merge_list_bool
 \bool_new:N \l__chemnum_sub_only_bool
 \bool_new:N \l__chemnum_sub_all_bool
 \bool_new:N \l__chemnum_show_def_bool
@@ -333,11 +336,11 @@
     post-main-label-code  .tl_set:N   = \l__chemnum_post_main_label_default_tl ,
     post-main-label-code  .groups:n   = {compound} ,
     main-sub-sep          .tl_set:N   = \l__chemnum_compound_separator_tl ,
-    main-sub-sep          .groups:n   = {general} ,
+    main-sub-sep          .groups:n   = {general,list} ,
     list-label-sep        .tl_set:N   = \l__chemnum_main_separator_tl ,
-    list-label-sep        .groups:n   = {general} ,
+    list-label-sep        .groups:n   = {general,list} ,
     sub-list-label-sep    .tl_set:N   = \l__chemnum_sub_separator_tl ,
-    sub-list-label-sep    .groups:n   = {general} ,
+    sub-list-label-sep    .groups:n   = {general,list} ,
     format                .code:n     =
       \bool_if:NTF \l__chemnum_compound_local_bool
         { \tl_set:Nn \l__chemnum_local_label_format_tl {#1} }
@@ -350,6 +353,9 @@
     compress              .bool_set:N =
       \l__chemnum_compress_subcompounds_bool ,
     compress              .groups:n   = {compound,general} ,
+    merge                 .bool_set:N =
+      \l__chemnum_merge_list_bool ,
+    merge                 .groups:n   = {general,list} ,
     % initiation:
     init                  .choice: ,
     init / true           .code:n     =
@@ -376,11 +382,11 @@
     init                  .groups:n   = {general} ,
     % list processing:
     list-sep-two          .tl_set:N   = \l__chemnum_sep_list_two_tl ,
-    list-sep-two          .groups:n   = {general} ,
+    list-sep-two          .groups:n   = {general,list} ,
     list-sep-more         .tl_set:N   = \l__chemnum_sep_list_more_tl ,
-    list-sep-more         .groups:n   = {general} ,
+    list-sep-more         .groups:n   = {general,list} ,
     list-sep-last-two     .tl_set:N   = \l__chemnum_sep_list_last_two_tl ,
-    list-sep-last-two     .groups:n   = {general} ,
+    list-sep-last-two     .groups:n   = {general,list} ,
     sub-list-sep-two      .tl_set:N   = \l__chemnum_sep_sublist_two_tl ,
     sub-list-sep-two      .groups:n   = {compound,general} ,
     sub-list-sep-more     .tl_set:N   = \l__chemnum_sep_sublist_more_tl ,
@@ -1240,11 +1246,10 @@
 \cs_set_protected:Npn \chemnum_show_key_def:n #1
   { \marginpar { \fbox { \normalfont \ttfamily #1 } } }
 
-% TODO: port this to something more expl3 like:
 \cs_set_protected:Npn \chemnum_show_key_ref:n #1
   {
     \group_begin:
-      \leavevmode
+      \hbox_unpack:N \c_empty_box % this is \leavevmode
       \vbox_to_zero:n
         {
           \tex_vss:D
@@ -1454,66 +1459,171 @@
 % #4: list of IDs
 \cs_new_protected:Npn \chemnum_cmpd:nnnn #1#2#3#4
   {
-    \seq_set_split:NVn
-      \l__chemnum_tmpa_seq
-      \l__chemnum_main_separator_tl
-      {#4}
-    \seq_remove_duplicates:N \l__chemnum_tmpa_seq
-    \chemnum_sort_main_labels:N \l__chemnum_tmpa_seq
-    % \seq_show:N \l__chemnum_tmpa_seq
-    \seq_clear:N \l__chemnum_tmpb_seq
-    % TODO: can we sort those? There is the list
-    % \g__chemnum_defined_compounds_seq that holds all labels
-    % this won't work of course if numbers are reset... or rather: strange
-    % lists could happen
-    \seq_map_inline:Nn \l__chemnum_tmpa_seq
-      {
-        \seq_put_right:Nn \l__chemnum_tmpb_seq
-          { \chemnum_single_compound:NNnn #1 #2 {#3} {##1} }
-      }
-    \bool_if:NTF #1 % starred call of \cmpd
-      { \seq_use:Nn \l__chemnum_tmpb_seq {} }
-      {
-        \seq_use:NVVV \l__chemnum_tmpb_seq
-          \l__chemnum_sep_list_two_tl
-          \l__chemnum_sep_list_more_tl
-          \l__chemnum_sep_list_last_two_tl
-      }
+    \group_begin:
+      \keys_set_groups:nnn {chemnum} {list} {#3}
+      \seq_set_split:NVn
+        \l__chemnum_tmpa_seq
+        \l__chemnum_main_separator_tl
+        {#4}
+      \seq_remove_duplicates:N \l__chemnum_tmpa_seq
+      \chemnum_sort_main_labels:N \l__chemnum_tmpa_seq
+      \seq_clear:N \l__chemnum_tmpb_seq
+      \seq_map_inline:Nn \l__chemnum_tmpa_seq
+        {
+          \seq_put_right:Nn \l__chemnum_tmpb_seq
+            { \chemnum_single_compound:NNnn #1 #2 {#3} {##1} }
+        }
+      \bool_if:NTF #1 % starred call of \cmpd
+        { \seq_use:Nn \l__chemnum_tmpb_seq {} }
+        {
+          \seq_use:NVVV \l__chemnum_tmpb_seq
+            \l__chemnum_sep_list_two_tl
+            \l__chemnum_sep_list_more_tl
+            \l__chemnum_sep_list_last_two_tl
+        }
+    \group_end:
   }
 
-% #1: variable
-% #2: main/sub separator
-% #3: complete label
-\cs_new_protected:Npn \chemnum_remove_sub:Nnn #1#2#3
+% #1: first variable
+% #2: second variable
+% #3: main/sub separator
+% #4: complete label
+\cs_new_protected:Npn \chemnum_separate_main_sub:NNnn #1#2#3#4
   {
-    \cs_set:Npn \__chemnum_remove_sub:w ##1#2##2 \q_stop
+    \cs_set:Npn \__chemnum_remove_sub:w ##1#3##2 \q_stop
       { \exp_not:n { ##1 } }
-    \tl_set:Nx #1 { \__chemnum_remove_sub:w #3#2 \q_stop }
+    \cs_set:Npn \__chemnum_get_sub:w ##1#3##2#3##3 \q_stop
+      {
+        \tl_if_blank:nF {##2} { \exp_not:n { ##2 } }
+      }
+    \tl_set:Nx #1 { \__chemnum_remove_sub:w #4#3 \q_stop }
+    \tl_set:Nx #2 { \__chemnum_get_sub:w #4#3#3 \q_stop }
   }
-\cs_generate_variant:Nn \chemnum_remove_sub:Nnn { NV }
+\cs_generate_variant:Nn \chemnum_separate_main_sub:NNnn { NNV }
 
+% sorting and merging of the main label list:
 % #1: seq that holds the label list
 \cs_new_protected:Npn \chemnum_sort_main_labels:N #1
   {
     \prop_clear:N \l__chemnum_tmpa_prop
     \seq_clear:N \l__chemnum_tmpb_seq
+    \seq_clear:N \l__chemnum_tmpc_seq
+    % build property list that holds entries of #1:
     \seq_map_inline:Nn #1
       {
-        \chemnum_remove_sub:NVn
-          \l__chemnum_tmpa_tl
+        \chemnum_separate_main_sub:NNVn
+          \l__chemnum_tmpa_tl % main part
+          \l__chemnum_tmpb_tl % sub part
           \l__chemnum_compound_separator_tl
           {##1}
-        \prop_put:NVn \l__chemnum_tmpa_prop \l__chemnum_tmpa_tl {##1}
+        % if the main list holds two times the same label with different
+        % sublabels (`q.two' and `q.five') only the last one will be saved
+        % => this problem does not exist with the `merge' option
+        \bool_if:NTF \l__chemnum_merge_list_bool
+          {
+            \prop_get:NVNTF \l__chemnum_tmpa_prop
+              \l__chemnum_tmpa_tl
+              \l__chemnum_tmpc_tl
+              {
+                \prop_put:NVx \l__chemnum_tmpa_prop
+                  \l__chemnum_tmpa_tl
+                  {
+                    \exp_not:V \l__chemnum_tmpc_tl
+                    \exp_not:V \l__chemnum_sub_separator_tl
+                    \exp_not:V \l__chemnum_tmpb_tl
+                  }
+              }
+              {
+                \prop_put:NVV \l__chemnum_tmpa_prop
+                  \l__chemnum_tmpa_tl
+                  \l__chemnum_tmpb_tl
+              }
+          }
+          {
+            \prop_put:NVV \l__chemnum_tmpa_prop
+              \l__chemnum_tmpa_tl
+              \l__chemnum_tmpb_tl
+          }
       }
+    % \l__chemnum_tmpa_prop now holds all main labels with possible sublabel
+    % lists
+    % \prop_show:N \l__chemnum_tmpa_prop
+    % build sequence that holds entries of #1 in order of already defined
+    % labels:
+    % \seq_show:N \g__chemnum_defined_compounds_seq
     \seq_map_inline:Nn \g__chemnum_defined_compounds_seq
       {
         \prop_get:NnNT \l__chemnum_tmpa_prop {##1} \l__chemnum_tmpa_tl
-          { \seq_put_right:NV \l__chemnum_tmpb_seq \l__chemnum_tmpa_tl }
+          {
+            \tl_if_in:VVTF
+              \l__chemnum_tmpa_tl
+              \l__chemnum_sub_separator_tl
+              {
+                \seq_put_right:Nx \l__chemnum_tmpb_seq
+                  {
+                    \exp_not:n { ##1 }
+                    \tl_if_blank:VF \l__chemnum_tmpa_tl
+                      {
+                        \exp_not:V \l__chemnum_compound_separator_tl
+                        { \exp_not:V \l__chemnum_tmpa_tl }
+                      }
+                  }
+              }
+              {
+                \seq_put_right:Nx \l__chemnum_tmpb_seq
+                  {
+                    \exp_not:n { ##1 }
+                    \tl_if_blank:VF \l__chemnum_tmpa_tl
+                      {
+                        \exp_not:V \l__chemnum_compound_separator_tl
+                        \exp_not:V \l__chemnum_tmpa_tl
+                      }
+                  }
+              }
+            \seq_if_in:NnF \l__chemnum_tmpc_seq {##1}
+              { \seq_put_right:Nn \l__chemnum_tmpc_seq {##1} }
+          }
       }
-    \seq_map_inline:Nn #1
+    % \l__chemnum_tmpb_seq now holds all labels that are already defined
+    % the same \l__chemnum_tmpc_seq which only holds the /main/ labels
+    \bool_if:NTF \l__chemnum_merge_list_bool
       {
-        \seq_if_in:NnF \l__chemnum_tmpb_seq {##1}
-          { \seq_put_right:Nn \l__chemnum_tmpb_seq {##1} }
+         % check if existing main label is present, otherwise add entry
+        \seq_map_inline:Nn #1
+          {
+            \chemnum_separate_main_sub:NNVn
+              \l__chemnum_tmpa_tl % main part
+              \l__chemnum_tmpb_tl % sub part
+              \l__chemnum_compound_separator_tl
+              {##1}
+            \seq_if_in:NVF \l__chemnum_tmpc_seq \l__chemnum_tmpa_tl
+              {
+                \prop_get:NVNT \l__chemnum_tmpa_prop
+                  \l__chemnum_tmpa_tl
+                  \l__chemnum_tmpc_tl
+                  {
+                    \seq_put_right:Nx \l__chemnum_tmpb_seq
+                      {
+                        \exp_not:V \l__chemnum_tmpa_tl
+                        \tl_if_blank:VF \l__chemnum_tmpc_tl
+                          {
+                            \exp_not:V \l__chemnum_compound_separator_tl
+                            \exp_not:V \l__chemnum_tmpc_tl
+                          }
+                      }
+                    \seq_put_right:NV \l__chemnum_tmpc_seq \l__chemnum_tmpa_tl
+                  }
+              }
+         }
+      }
+      {
+        % \seq_show:N \l__chemnum_tmpb_seq
+        \seq_map_inline:Nn #1
+          {
+            % these are possible new labels:
+            \seq_if_in:NnF \l__chemnum_tmpb_seq {##1}
+              { \seq_put_right:Nn \l__chemnum_tmpb_seq {##1} }
+          }
       }
     \seq_set_eq:NN #1 \l__chemnum_tmpb_seq
   }
@@ -1704,7 +1814,7 @@
 %       command, i.e., those belonging to the `compound' group
 \cs_new_protected:Npn \chemnum_setup:n #1
   {
-    \keys_set_filter:nnn {chemnum} {compound} {#1}
+    \keys_set_filter:nnn {chemnum} {compound,general} {#1}
     \keys_set_groups:nnn {chemnum} {general} {#1}
   }
 

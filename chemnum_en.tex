@@ -66,7 +66,8 @@
 
 \usepackage{acro,accsupp}
 \acsetup{
-  short-format = \scshape
+  short-format = \scshape ,
+  first-style = short
 }
 \DeclareAcronym{pdf}{
   short = pdf ,
@@ -119,7 +120,7 @@ complete re-write of \chemnum\ where I tried to achieve several points:
     unified naming of the commands and a less redundant naming of the
     options.
   \item Extended functionality such as sorting and compressing of sublabel
-    lists.
+    lists and sorting and merging of main label lists.
 \end{itemize}
 
 Although the syntax seems more or less the same at first sight quite some
@@ -156,44 +157,47 @@ glad to receive feedback either on \chemnum's homepage
 
 \section{Overview over the Available Commands}\label{sec:overv-over-avail}
 
+This section lists all available commands with a brief description.  Commands
+marked with \expandablesign\ are expandable in an \cs*{edef} like context.
+
 \begin{commands}
-  \command{cmpd}[\sarg\code{+}\oarg{options}\marg{list of \acsp{id}}]
+  \command{cmpd}[\sarg\code{+}\oarg{options}\marg{list of \acp{id}}]
     The main command for creating and refering to compound labels.  This
     command is described in detail in section~\ref{sec:deta-comp-labels}.  For
     most people this will be the only command they need.
-  \command{refcmpd}[\oarg{options}\marg{\acs{id}}]
+  \command{refcmpd}[\oarg{options}\marg{\ac{id}}]
     This command only refers to an already defined label but does not define a
     label itself.  This is an alias of \cs{cmpd}\code{+}.
-  \command{labelcmpd}[\oarg{options}\marg{\acs{id}}]
+  \command{labelcmpd}[\oarg{options}\marg{\ac{id}}]
     This command only defines a new label but does not print it.  This is an
     alias of \cs{cmpd}\sarg.
-  \expandable\command{cmpdplain}[\marg{\acs{id}}]
+  \expandable\command{cmpdplain}[\marg{\ac{id}}]
     Reads a label and writes it expandably without formatting.  It is not able
-    to parse a list.  Its sole purpose is usage in \acs{pdf} strings
-    (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{\acs{pdf} string}).  This
+    to parse a list.  Its sole purpose is usage in \ac{pdf} strings
+    (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{\ac{pdf} string}).  This
     command is described in section~\ref{sec:deta-comp-labels}.
-  \expandable\command{subcmpdplain}[\marg{main \acs{id}}\marg{sub \acs{id}}]
+  \expandable\command{subcmpdplain}[\marg{main \ac{id}}\marg{sub \ac{id}}]
     Reads a sublabel and writes it expandably without formatting.  It is not
     able to parse a list.  Its sole purpose is usage in pdfstrings
-    (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{\acs{pdf} string}).  This
+    (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{\ac{pdf} string}).  This
     command is described in section~\ref{sec:deta-comp-labels}.
-  \expandable\command{submaincmpdplain}[\marg{main \acs{id}}\marg{sub \acs{id}}]
+  \expandable\command{submaincmpdplain}[\marg{main \ac{id}}\marg{sub \ac{id}}]
     Reads a main label and a sublabel and writes them expandably without
     formatting.  It is not able to parse a list.  Its sole purpose is usage in
-    \acs{pdf} strings (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{\acs{pdf}
+    \ac{pdf} strings (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{\ac{pdf}
       string}). This command is described in
     section~\ref{sec:deta-comp-labels}.
-  \command{initcmpd}[\oarg{options}\marg{list of \acsp{id}}]
+  \command{initcmpd}[\oarg{options}\marg{list of \acp{id}}]
     Initiate compound labels.  This command can only be used in the preamble.
     It is desribed in section~\ref{sec:deta-comp-labels}.
-  \expandable\command{cmpdproperty}[\marg{\acs{id}}\marg{property}]
+  \expandable\command{cmpdproperty}[\marg{\ac{id}}\marg{property}]
     Get the associated property \meta{property} of compound
-    \meta{\acs{id}}. This command is described in
+    \meta{\ac{id}}. This command is described in
     section~\ref{sec:deta-comp-labels}.
-  \expandable\command{subcmpdproperty}[\marg{main \acs{id}}\marg{sub
-    \acs{id}}\marg{property}]
+  \expandable\command{subcmpdproperty}[\marg{main \ac{id}}\marg{sub
+    \ac{id}}\marg{property}]
     Get the associated property \meta{property} of subcompound \meta{sub
-      \acs{id}} of compound \meta{main \acs{id}}.  This command is described
+      \ac{id}} of compound \meta{main \ac{id}}.  This command is described
     in section~\ref{sec:deta-comp-labels}.
   \command{newcmpdcounterformat}[\marg{name}\marg{command}]
     Makes the label format \meta{name} known to \chemnum.  \meta{command}
@@ -206,22 +210,22 @@ glad to receive feedback either on \chemnum's homepage
     again.  This is the same as
     \cs*{setcounter}\Marg{cmpdmain}\Marg{$\text{\meta{integer}}-1$}.  The
     command is described in section~\ref{sec:reset-numbering}.
-  \command{cmpdshowdef}[\marg{\acs{id}}]
-    Internal command used to display \meta{\acs{id}} of a newly defined compound
+  \command{cmpdshowdef}[\marg{\ac{id}}]
+    Internal command used to display \meta{\ac{id}} of a newly defined compound
     label when the option \option{show-keys} is used.  The command is
     described in section~\ref{sec:debugg-inform}.
-  \command{cmpdshowref}[\marg{\acs{id}}]
-    Internal command used to display \meta{\acs{id}} of a referencing compound
+  \command{cmpdshowref}[\marg{\ac{id}}]
+    Internal command used to display \meta{\ac{id}} of a referencing compound
     label when the option \option{show-keys} is used.  The command is
     described in section~\ref{sec:debugg-inform}.
-  \command{subcmpdshowdef}[\marg{main \acs{id}}\marg{sub \acs{id}}]
-    Internal command used to display \meta{main \acs{id}} and \meta{sub
-      \acs{id}} of a newly defined subcompound label when the option
+  \command{subcmpdshowdef}[\marg{main \ac{id}}\marg{sub \ac{id}}]
+    Internal command used to display \meta{main \ac{id}} and \meta{sub
+      \ac{id}} of a newly defined subcompound label when the option
     \option{show-keys} is used.  The command is described in
     section~\ref{sec:debugg-inform}.
-  \command{subcmpdshowref}[\marg{main \acs{id}}\marg{sub \acs{id}}]
-    Internal command used to display \meta{main \acs{id}} and \meta{sub
-      \acs{id}} of a referencing subcompound label when the option
+  \command{subcmpdshowref}[\marg{main \ac{id}}\marg{sub \ac{id}}]
+    Internal command used to display \meta{main \ac{id}} and \meta{sub
+      \ac{id}} of a referencing subcompound label when the option
     \option{show-keys} is used.  The command is described in
     section~\ref{sec:debugg-inform}.
 \end{commands}
@@ -231,8 +235,8 @@ glad to receive feedback either on \chemnum's homepage
 
 The main command of this package is this one:
 \begin{commands}
-  \command{cmpd}[\marg{\acs{id}}]
-    When \meta{\acs{id}} is used the first time, the label is created, saved
+  \command{cmpd}[\marg{\ac{id}}]
+    When \meta{\ac{id}} is used the first time, the label is created, saved
     (= declared) and printed.  Each further use just prints the label.
 \end{commands}
 
@@ -246,8 +250,8 @@ The main command of this package is this one:
 If it is necessary to declare a compound without printing the label it is
 possible with
 \begin{commands}
-  \command{cmpd}[\sarg\marg{\acs{id}}]
-    Declare the label \meta{\acs{id}} but don't print anything.
+  \command{cmpd}[\sarg\marg{\ac{id}}]
+    Declare the label \meta{\ac{id}} but don't print anything.
 \end{commands}
 
 \begin{example}
@@ -270,10 +274,10 @@ places are not.  It's probably best not to use blanks in label names at all.
 \subsection{Sublabels}\label{sec:sublabel}
 If you want a label like \cmpd{a.one}, you need to use the following syntax:
 \begin{commands}
-  \command{cmpd}[\Marg{\meta{main \acs{id}}.\meta{sub \acs{id}}}]
-    \meta{main \acs{id}} is the main name which stays the same, \meta{sub
-      \acs{id}} varies.  This syntax means that the point \code{.}
-    \emph{cannot} be a part of \meta{main \acs{id}} or \meta{sub \acs{id}}.
+  \command{cmpd}[\Marg{\meta{main \ac{id}}.\meta{sub \ac{id}}}]
+    \meta{main \ac{id}} is the main name which stays the same, \meta{sub
+      \ac{id}} varies.  This syntax means that the point \code{.}
+    \emph{cannot} be a part of \meta{main \ac{id}} or \meta{sub \ac{id}}.
     Instead of the point you also can use another symbol, see
     section~\ref{sec:chang-input-mark} for details.
 \end{commands}
@@ -401,23 +405,23 @@ When you call \cs{cmpd} with a new label three things happen:
 Since new labels are declared when \cs{cmpd} is first used using it in section
 titles that are written to the table of contents may to lead to wrong
 numbering.  In order to avoid this compound label information is written to
-the \code{aux} file.  The command \cs{refcmpd}\oarg{options}\marg{\acs{id}}
+the \code{aux} file.  The command \cs{refcmpd}\oarg{options}\marg{\ac{id}}
 only reads those information but does not declare a label.  There is also a
 command which does the opposite: it declares a label if it hasn't been
 declared before but will not print the corresponding label:
-\cs{labelcmpd}\oarg{options}\marg{\acs{id}}.  Both commands have shortcut
+\cs{labelcmpd}\oarg{options}\marg{\ac{id}}.  Both commands have shortcut
 versions: \cs{cmpd}\code{+} is the same as \cs{refcmpd}, \cs{cmpd}\sarg\ is
 the same as \cs{labelcmpd}.
 
-Another command available is \cs{cmpdplain}\marg{\acs{id}}.  This command is
+Another command available is \cs{cmpdplain}\marg{\ac{id}}.  This command is
 similar to \cs{refcmpd}.  There are a few important differences, though:
 \cs{cmpdplain} does \emph{not} take a list of labels as argument.  It also is
 \emph{not} able to interpret sublabels.  \cs{cmpdplain} does not format the
 label with whatever format has been declared.  And last but not least: it is
 expandable.  This means it can be used to get labels in \ac{pdf} bookmarks.
-It's equivalent \cs{subcmpdplain}\marg{main \acs{id}}\marg{sub \acs{id}} does
+It's equivalent \cs{subcmpdplain}\marg{main \ac{id}}\marg{sub \ac{id}} does
 the same for sublabels.  A third sibling, \cs{submaincmpdplain}\marg{main
-  \acs{id}}\marg{sub \acs{id}}, writes both the main and the sublabel.
+  \ac{id}}\marg{sub \ac{id}}, writes both the main and the sublabel.
 
 I should also say a few words on lists of labels.  A usage like
 \verbcode+\cmpd{a,b,c,e}+ will be printed as a \emph{sorted} list.  The order
@@ -429,12 +433,15 @@ of a compound: the usage \verbcode+\cmpd{q.{one,three,four,two,five}}+ gives
 \option{compress} option).  Be careful if you have a list with several
 occurences of the same main label but with different sublabels:
 \begin{example}[side-by-side]
+  \cmpd{q.two} and \cmpd{q.five} \par
   \cmpd{q.five,q.two} \par
-  \cmpd{q.two,q.five}
+  \cmpd{q.two,q.five} \par
+  \cmpd[merge]{q.two,q.five}
 \end{example}
 Indeed: since the main list gets kind of sorted this may actually lead to
 unordered lists of such labels\footnote{This is something to be fixed
-  (hopefully) in some future version of \chemnum.}.
+  (hopefully) in some future version of \chemnum.}.  If you use the option
+\option{merge} then the problem vanishes as then only one label is printed.
 
 A last thing on lists: duplicate entries (\ie, \emph{exact} duplicates) will
 be removed.
@@ -442,7 +449,7 @@ be removed.
 \subsection{Properties of Compound Labels}\label{sec:prop-comp-labels}
 
 Every label has a number of properties.  The first property is of course its
-\acs{id} which identifies the label.  The other properties are:
+\ac{id} which identifies the label.  The other properties are:
 \begin{description}
   \item[number] An internal unique number.
   \item[counter-representation] The counter representation associated with the
@@ -464,8 +471,8 @@ The properties for a label are set the when a label is declared for the first
 time.
 
 \begin{commands}
-  \expandable\command{cmpdproperty}[\marg{\acs{id}}\marg{property}]
-    Get the associated property \meta{property} of compound \meta{\acs{id}}.  This
+  \expandable\command{cmpdproperty}[\marg{\ac{id}}\marg{property}]
+    Get the associated property \meta{property} of compound \meta{\ac{id}}.  This
     command is expandable.
 \end{commands}
 
@@ -481,7 +488,7 @@ time.
 \end{example}
 
 Similarly a sublabel has associated properties.  Additionally to the obvious
-ones -- its \acs{id} and the \acs{id} the main label it belongs to -- these
+ones -- its \ac{id} and the \ac{id} the main label it belongs to -- these
 are
 \begin{description}
   \item[number] An internal unique number.
@@ -490,10 +497,10 @@ are
 \end{description}
 
 \begin{commands}
-  \expandable\command{subcmpdproperty}[\marg{main \acs{id}}\marg{sub
-    \acs{id}}\marg{property}]
+  \expandable\command{subcmpdproperty}[\marg{main \ac{id}}\marg{sub
+    \ac{id}}\marg{property}]
     Get the associated property \meta{property} of subcompound \meta{sub
-      \acs{id}} of compound \meta{main \acs{id}}.  This command is
+      \ac{id}} of compound \meta{main \ac{id}}.  This command is
     expandable.
 \end{commands}
 
@@ -542,7 +549,7 @@ Initiating is done via the command \cs{initcmpd}:
 \begin{sourcecode}
   \initcmpd{a,b,c,d}
 \end{sourcecode}
-You simply use all \acsp{id} you want to use like you would use them in
+You simply use all \acp{id} you want to use like you would use them in
 \cs{cmpd}.  \cs{initcmpd} also has an optional argument that allows you to set
 options for those labels.  Legal options are the same as for \cs{cmpd}.
 
@@ -579,32 +586,35 @@ command.  They are marked with \module{replace}.
   \keychoice{sub-counter-format}{arabic,alph,Alph,roman,Roman,greek,Greek}%
     \Module{both (g)}\Default{alph}
     The format of the number associated with the sub compounds.
-  \keybool{compress}\Module{both (l)}\Default{false}
+  \keybool{compress}\Module{both (l)}\Default{true}
     If set to true a list of sublabels is compressed, \ie,
     \cmpd[compress=false]{q.{one,three,four,five}} becomes
     \cmpd{q.{one,three,four,five}}.
+  \keybool{merge}\Module{both (l)}\Default{false}
+    If set to true a list of labels is merged, \ie,
+    \cmpd{q.five,a,q.two} becomes \cmpd[merge=true]{q.five,a,q.two}.
   \keyval{pre-label-code}{code}\Module{cmpd (g)}\Default
     Code to be inserted before a label.
   \keyval{post-label-code}{code}\Module{cmpd (g)}\Default
     Code to be inserted after a label.
-  \keyval{main-sub-sep}{code}\Module{general}\Default{.}
+  \keyval{main-sub-sep}{code}\Module{both (l)}\Default{.}
     The separator symbol that is used in \cs{cmpd} to separate the \meta{main
-      \acs{id}} from a \meta{sub \acs{id}}.
+      \ac{id}} from a \meta{sub \ac{id}}.
   \keyval{format}{formatting commands}\Module{both (l)}\Default{\cs*{bfseries}}
     The default format of the labels.
-  \keyval{list-label-sep}{code}\Module{general}\Default{,}
-    The separator that is used to separate different \meta{main \acsp{id}} in
+  \keyval{list-label-sep}{code}\Module{both (l)}\Default{,}
+    The separator that is used to separate different \meta{main \acp{id}} in
     \cs{cmpd}.
-  \keyval{sub-list-label-sep}{code}\Module{general}\Default{,}
+  \keyval{sub-list-label-sep}{code}\Module{both (l)}\Default{,}
     The marker that is used to split an input list of sublabels.
   \keyval{list-sep-two}{code}%
-    \Module{general}\Default{\visualizespaces{\GetTranslation{chemnum-sep-two}}}
+    \Module{both (l)}\Default{\visualizespaces{\GetTranslation{chemnum-sep-two}}}
     The output separator between labels in a list that contains of two items.
-  \keyval{list-sep-more}{code}\Module{general}\Default{\visualizespaces{, }}
+  \keyval{list-sep-more}{code}\Module{both (l)}\Default{\visualizespaces{, }}
     The output separator between labels in a list that contains of more than
     two items.
   \keyval{list-sep-last-two}{code}%
-    \Module{general}\Default{\visualizespaces{\GetTranslation{chemnum-sep-last-two}}}
+    \Module{both (l)}\Default{\visualizespaces{\GetTranslation{chemnum-sep-last-two}}}
     The output separator between the last two labels in a list that contains
     of more than two items.
   \keybool{sub-only}\Module{cmpd (l)}\Default{false}
@@ -637,10 +647,10 @@ command.  They are marked with \module{replace}.
   \keyval{style}{code}\Module{replace}\Default{\cs*{sffamily}}
     Local additional \TeX\ code that it placed before the \cs{cmpd} command in
     the replacement.
-  \keychoice{replace-pos}{\marg{\TeX\ pos}\marg{\acs{ps}
+  \keychoice{replace-pos}{\marg{\TeX\ pos}\marg{\ac{ps}
       pos}}\Module{general}\Default{bb}
     Options for \pkg{psfrag}'s \cs{psfrag}.
-  \keychoice{pos}{\marg{\TeX\ pos}\marg{\acs{ps}
+  \keychoice{pos}{\marg{\TeX\ pos}\marg{\ac{ps}
       pos}}\Module{replace}\Default{bb}
     Local options for \pkg{psfrag}'s \cs{psfrag}.
   \keychoice{init}{\default{true},main,false,strict,main-strict}%
@@ -822,7 +832,7 @@ explicitly will overwrite the language sensitivity.  If you only want to adapt
 the separators to your language have a look at
 section~\ref{sec:lang-depend-sett}.
 
-\section{Replacing Tags in \acs{eps} or \acs{ps} Files}
+\section{Replacing Tags in \ac{eps} or \ac{ps} Files}
 
 Although it is quite possible to create rection schemes within \LaTeX\
 directly -- for example with the \pkg{chemfig} package~\cite{pkg:chemfig} --
@@ -832,9 +842,9 @@ method is usually used:
 \begin{itemize}
   \item Create the scheme and place temporary tags like \code{TMP1},
     \code{TMP2} and so on where you want the compound labels to be.
-  \item Export the scheme as \acs{eps} or \acs{ps} figure where you make sure
+  \item Export the scheme as \ac{eps} or \ac{ps} figure where you make sure
     that the tags are embedded as text strings.
-  \item Include the \acs{eps} with \cs*{includegraphics}.  Right before that
+  \item Include the \ac{eps} with \cs*{includegraphics}.  Right before that
     use \cs{replacecmpd} once for every temporary tag.
 \end{itemize}
 
@@ -884,10 +894,10 @@ be changed.  The complete list of options is this:
   \keyval{style}{code}\Module{replace}\Default{\cs*{sffamily}}
     Local additional \TeX\ code that it placed before the \cs{cmpd} command in
     the replacement.
-  \keychoice{replace-pos}{\marg{\TeX\ pos}\marg{\acs{ps}
+  \keychoice{replace-pos}{\marg{\TeX\ pos}\marg{\ac{ps}
       pos}}\Module{general}\Default{bb}
     Options for \pkg{psfrag}'s \cs{psfrag}.
-  \keychoice{pos}{\marg{\TeX\ pos}\marg{\acs{ps}
+  \keychoice{pos}{\marg{\TeX\ pos}\marg{\ac{ps}
       pos}}\Module{replace}\Default{bb}
     Local options for \pkg{psfrag}'s \cs{psfrag}.  
 \end{options}
@@ -916,7 +926,7 @@ example \code{temp\meta{number}} you can change this with following option:
 
 The options \option{pos} and \option{replace-pos} refer to \cs{psfrag}'s
 optional arguments which determine the positioning of the \TeX\ box with
-respect to the \acs{ps} box that is replaced.  This is described in
+respect to the \ac{ps} box that is replaced.  This is described in
 \pkg{psfrag}'s documentation.
 
 \begin{example}[compile,exe-with={--shell-escape},runs=1,float=htbp,caption={A scheme with
@@ -1070,27 +1080,27 @@ The \option{show-keys} writes some visual information to the document itself:
 \end{example}
 The last example shows the information when a label is referenced.  If a label
 is newly declared information is written to the margin like for this label
-with the \acs{id} \code{showkey}: \setchemnum{show-keys}\cmpd{showkey} that
+with the \ac{id} \code{showkey}: \setchemnum{show-keys}\cmpd{showkey} that
 again is referencend here: \cmpd{showkey}.
 
 The option activates four commands:
 \begin{commands}
-  \command{cmpdshowdef}[\marg{\acs{id}}]
-    Internal command used to display \meta{\acs{id}} of a newly defined compound
+  \command{cmpdshowdef}[\marg{\ac{id}}]
+    Internal command used to display \meta{\ac{id}} of a newly defined compound
     label when the option \option{show-keys} is used.  The command is
     described in section~\ref{sec:debugg-inform}.
-  \command{cmpdshowref}[\marg{\acs{id}}]
-    Internal command used to display \meta{\acs{id}} of a referencing compound
+  \command{cmpdshowref}[\marg{\ac{id}}]
+    Internal command used to display \meta{\ac{id}} of a referencing compound
     label when the option \option{show-keys} is used.  The command is
     described in section~\ref{sec:debugg-inform}.
-  \command{subcmpdshowdef}[\marg{main \acs{id}}\marg{sub \acs{id}}]
-    Internal command used to display \meta{main \acs{id}} and \meta{sub
-      \acs{id}} of a newly defined subcompound label when the option
+  \command{subcmpdshowdef}[\marg{main \ac{id}}\marg{sub \ac{id}}]
+    Internal command used to display \meta{main \ac{id}} and \meta{sub
+      \ac{id}} of a newly defined subcompound label when the option
     \option{show-keys} is used.  The command is described in
     section~\ref{sec:debugg-inform}.
-  \command{subcmpdshowref}[\marg{main \acs{id}}\marg{sub \acs{id}}]
-    Internal command used to display \meta{main \acs{id}} and \meta{sub
-      \acs{id}} of a referencing subcompound label when the option
+  \command{subcmpdshowref}[\marg{main \ac{id}}\marg{sub \ac{id}}]
+    Internal command used to display \meta{main \ac{id}} and \meta{sub
+      \ac{id}} of a referencing subcompound label when the option
     \option{show-keys} is used.  The command is described in
     section~\ref{sec:debugg-inform}.
 \end{commands}
