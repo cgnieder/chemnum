@@ -1,5 +1,5 @@
 % arara: pdflatex: { shell: on }
-% !arara: pdflatex: { shell: on }
+% arara: pdflatex: { shell: on }
 % arara: biber
 % arara: pdflatex
 % arara: pdflatex
@@ -56,7 +56,11 @@
 \activatechemgreekmapping{textgreek}
 
 \usepackage{chemformula}
-\usepackage{chemfig}
+\setchemformula{format=\libertineLF}
+\usepackage{chemfig,relsize}
+\setatomsep{1.78500 em}
+\setbondstyle{line width = 0.06642 em}
+\renewcommand*\printatom[1]{\textsmaller{\ensuremath{\mathsf{#1}}}}
 
 \usepackage{array,booktabs}
 
@@ -105,9 +109,9 @@
 
 \chemnum\ requires the bundles \bnd{l3kernel}~\cite{bnd:l3kernel} and
 \bnd{l3packages}~\cite{bnd:l3packages}.  It also requires the
-\pkg{translations} package~\cite{pkg:translations} and \pkg{chemgreek} from
-the \bnd{chemmacros} bundle~\cite{bnd:chemmacros}.  It also loads the
-\pkg{psfrag}~\cite{pkg:psfrag}.
+\pkg{translations} package~\cite{pkg:translations}, \pkg{chemgreek} from the
+\bnd{chemmacros} bundle~\cite{bnd:chemmacros} and the
+\pkg{psfrag}~\cite{pkg:psfrag} package.
 
 \section{News}\label{sec:news}
 The \chemnum\ package has been my first attempt to create a comprehensive
@@ -123,18 +127,14 @@ complete re-write of \chemnum\ where I tried to achieve several points:
     lists and sorting and merging of main label lists.
 \end{itemize}
 
-Although the syntax seems more or less the same at first sight quite some
-changes have been made that make version~1 incompatible with version~0.
-% This
-% is why version~0 is still available through the option \keyis{version}{0}.  If
-% you load the package with
-% \begin{sourcecode}
-%   \usepackage[version=0]{chemnum}
-% \end{sourcecode}
-% version 0.6b from June~5th~2013 will be used.  This version is not documented
-% in the document you're reading right now.
-Older versions are still available
-from websites such as \website{ctanhg.scharrer-online.de} or
+Although the syntax seems more or less the same at first sight quite a number
+of changes have been made that make version~1 incompatible with version~0.
+While I thought a while about maintaining backwards compatibility version~0
+was known to in an experimental stage where everything was allowed to be
+changed at any time.  The same is not true for version~1.
+
+Older versions are still available from websites such as
+\website{ctanhg.scharrer-online.de} or
 \securewebsite{bitbucket.org/cgnieder/chemnum}.  You can also email me for an
 older version.
 
@@ -142,6 +142,7 @@ Many commands have got a new name! The most important ones are:
 \begin{itemize}
   \item \cs*{cmpdref}; this is now called \cs{replacecmpd}.
   \item \cs*{cmpdinit}; this is now called \cs{initcmpd}.
+  \item \cs*{cmpdreset}; this is now called \cs{resetcmpd}.
   \item \cs*{cmpdsetup}; this is now called \cs{setchemnum}.
 \end{itemize}
 However, there are many more changes.  Basically all options have new names
@@ -159,6 +160,7 @@ glad to receive feedback either on \chemnum's homepage
 
 This section lists all available commands with a brief description.  Commands
 marked with \expandablesign\ are expandable in an \cs*{edef} like context.
+Most of the commands eill be explained in a later section in more detail.
 
 \begin{commands}
   \command{cmpd}[\sarg\code{+}\oarg{options}\marg{list of \acp{id}}]
@@ -277,8 +279,9 @@ If you want a label like \cmpd{a.one}, you need to use the following syntax:
   \command{cmpd}[\Marg{\meta{main \ac{id}}.\meta{sub \ac{id}}}]
     \meta{main \ac{id}} is the main name which stays the same, \meta{sub
       \ac{id}} varies.  This syntax means that the point \code{.}
-    \emph{cannot} be a part of \meta{main \ac{id}} or \meta{sub \ac{id}}.
-    Instead of the point you also can use another symbol, see
+    \emph{cannot} be a part of \meta{main \ac{id}} or \meta{sub \ac{id}}
+    (except if you enclose the respective \ac{id} in braces). Instead of the
+    point you also can use another symbol, see
     section~\ref{sec:chang-input-mark} for details.
 \end{commands}
 
@@ -363,7 +366,6 @@ This is achieved with the option \option{sub-only}:
 
 \begin{example}
   % uses packages `chemfig', `chemformula' and `booktabs'
-  \setatomsep{2em}%
   \chemname{\chemfig{*6(=-=-(-R)=-)}}{\cmpd{benzene.{H,Me,OH,NH2}}}
   \quad
   \begin{tabular}{lll}
@@ -431,17 +433,14 @@ of a compound: the usage \verbcode+\cmpd{q.{one,three,four,two,five}}+ gives
 \cmpd{q.{one,three,four,two,five}} or
 \cmpd[compress=false]{q.{one,three,four,two,five}} (depending on the
 \option{compress} option).  Be careful if you have a list with several
-occurences of the same main label but with different sublabels:
+occurences of the same main label but with different sublabels: the labels
+will not be sorted depending on their sublabels.
 \begin{example}[side-by-side]
-  \cmpd{q.two} and \cmpd{q.five} \par
   \cmpd{q.five,q.two} \par
   \cmpd{q.two,q.five} \par
-  \cmpd[merge]{q.two,q.five}
+  \cmpd[merge]{q.five,q.two} \par
+  \cmpd{q.five,b,r,q.two,a}
 \end{example}
-Indeed: since the main list gets kind of sorted this may actually lead to
-unordered lists of such labels\footnote{This is something to be fixed
-  (hopefully) in some future version of \chemnum.}.  If you use the option
-\option{merge} then the problem vanishes as then only one label is printed.
 
 A last thing on lists: duplicate entries (\ie, \emph{exact} duplicates) will
 be removed.
@@ -575,9 +574,6 @@ A few of the options only have an effect when used with the \cs{replacecmpd}
 command.  They are marked with \module{replace}.
 
 \begin{options}
-  % \keychoice{version}{0,1}\Default{1}
-  %   Choose the package version.  This option can only be set as a package
-  %   option!
   \keyval{counter-within}{counter}\Module{general}
     Reset the compound numbers when \meta{counter} is stepped.
   \keychoice{counter-format}{arabic,alph,Alph,roman,Roman,greek,Greek}%
@@ -592,7 +588,7 @@ command.  They are marked with \module{replace}.
     \cmpd{q.{one,three,four,five}}.
   \keybool{merge}\Module{both (l)}\Default{false}
     If set to true a list of labels is merged, \ie,
-    \cmpd{q.five,a,q.two} becomes \cmpd[merge=true]{q.five,a,q.two}.
+    ``\cmpd{q.five,a,q.two}'' becomes ``\cmpd[merge=true]{q.five,a,q.two}''.
   \keyval{pre-label-code}{code}\Module{cmpd (g)}\Default
     Code to be inserted before a label.
   \keyval{post-label-code}{code}\Module{cmpd (g)}\Default
@@ -707,7 +703,6 @@ could image cases where it makes sense, \eg, Greek sublabels for the anomers
 of a carbohydrate.
 \begin{example}
   % this example uses the `chemfig' package
-  \setatomsep{2em}
   \definesubmol{r}{(-[4]H)(-[0]OH)}
   \definesubmol{l}{(-[0]H)(-[4]HO)}
   \labelcmpd[sub-counter-format=greek]{glucose.{alpha,beta}}
@@ -722,7 +717,7 @@ of a carbohydrate.
       -[:130]O-[:-170]?(-[:150,0.7]-[2,0.7]OH)
     }
     \arrow(alpha--chain){<=>}
-    \small\chemfig{[6]O=[5]-!r-!l-!r-!r--[7]OH}
+    \small\chemfig{[6]O=^[5]-!r-!l-!r-!r--[7]OH}
     \arrow(--beta){<=>}
     \small\chemfig{
       ?(-[:-170]HO)
@@ -740,10 +735,10 @@ of a carbohydrate.
 Should it ever be necessary to use another kind of counter representations
 than the ones already provided they can be added with this command:
 \begin{commands}
-  \command{newcmpdcounterformat}[\marg{name}\marg{command}]
-    Makes the label format \meta{name} known to \chemnum.  \meta{command}
-    needs to be a command that takes an integer number as argument and should
-    return a formatted version of it.
+  \command{newcmpdcounterformat}[\marg{name}\marg{code}]
+    Makes the label format \meta{name} known to \chemnum.  \meta{code}
+    needs to end with a command that takes an integer number as mandatory
+    argument and should return a formatted version of it.
 \end{commands}
 The \code{arabic} and \code{alph} counter settings for example could have been
 defined like this:
