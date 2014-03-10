@@ -43,6 +43,7 @@
     expandfull,expandtwice,
     fcite,
     includegraphics,
+    keyis,
     marginnote, midrule,
     NewDocumentCommand,
     schemestart,schemestop,setatomsep,
@@ -322,6 +323,15 @@ see section~\ref{sec:chang-input-mark} for details.
 The Harvard comma (see section~\ref{sec:lang-depend-sett}) in \code{, and}
 between \cmpd{e} and \cmpd{g.two} suggests that there are options to customize
 the list, see section~\ref{sec:formatting-labels} for more on this.
+
+The option \option{merge} has an effect on lists: if it is set to \code{true}
+multiple occurences of a main label with a possibly different set of sublabels
+are merged into one label:
+
+\begin{example}
+  With \keyis{merge}{true} a list like \cmpd{c,g.two,a,g.{one,four}} looks
+  like \cmpd[merge=true]{c,g.two,a,g.{one,four}}.
+\end{example}
 
 \subsection{Lists and Ranges of Sublabels}\label{sec:lists-rang-subl}
 Sometimes it can be useful to display a label with a list or a range of
@@ -636,7 +646,8 @@ command.  They are marked with \module{replace}.
   \keyval{replace-tag}{text}\Module{general}\Default{TMP}
     The default replacement tag.
   \keyval{tag}{text}\Module{replace}\Default{TMP\meta{number}}
-    The local replacement tag.
+    The local replacement tag.  \meta{number} is incremented by one at each
+    use and starts with \code{1}.  The increment happens locally.
   \keyval{replace-style}{code}\Module{general}\Default{\cs*{sffamily}}
     Additional \TeX\ code that it placed before the \cs{cmpd} command in the
     replacement.
@@ -882,7 +893,8 @@ be changed.  The complete list of options is this:
   \keyval{replace-tag}{text}\Module{general}\Default{TMP}
     The default replacement tag.
   \keyval{tag}{text}\Module{replace}\Default{TMP\meta{number}}
-    The local replacement tag.
+    The local replacement tag.   \meta{number} is incremented by one at each
+    use and starts with \code{1}.  The increment happens locally.
   \keyval{replace-style}{code}\Module{general}\Default{\cs*{sffamily}}
     Additional \TeX\ code that it placed before the \cs{cmpd} command in the
     replacement.
