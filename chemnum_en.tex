@@ -1,6 +1,6 @@
 % arara: pdflatex: { shell: on }
-% !arara: pdflatex: { shell: on }
-% !arara: biber
+% arara: pdflatex: { shell: on }
+% arara: biber
 % arara: pdflatex
 % arara: pdflatex
 \documentclass[load-preamble+,babel-options={ngerman,british,american}]{cnltx-doc}
@@ -1141,7 +1141,7 @@ above commands are defined in terms of them:
   \NewDocumentCommand\cmpdshowdef{m}{\chemnumshowdef{#1}}
   \NewDocumentCommand\cmpdshowref{m}{\chemnumshowref{#1}}
   \NewDocumentCommand\subcmpdshowdef{mm}{\chemnumshowdef{#2 (#1)}}
-  \NewDocumentCommand\subcmpdshowref{mm}{\chemnumshowdef{#2}}
+  \NewDocumentCommand\subcmpdshowref{mm}{\chemnumshowref{#2}}
 \end{sourcecode}
 
 \end{document}
