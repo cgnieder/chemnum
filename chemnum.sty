@@ -1369,19 +1369,26 @@
     \seq_clear:N #7
     \bool_if:NF #1
       {
-        % here's a problem: if a compound is referenced before it is declared
-        % then { g__chemnum_compound_#5_subcompounds_seq } doesn't exist and
-        % is empty!
         \seq_map_inline:cn { g__chemnum_compound_#5_subcompounds_seq }
           {
             \seq_if_in:NnT #3 {##1}
               {
                 \seq_put_right:Nn #6
                   { \chemnum_write_subcompound:NNnnn #1 #2 {#4} {#5} {##1} }
-                \seq_put_right:Nx #7
+                \bool_if:NTF #2
                   {
-                    \chemnum_expandable_get_subcompound_property:nnn
-                      { #5 } { ##1 } { number }
+                    \seq_put_right:Nx #7
+                      {
+                        \chemnum_expandable_get_subcompound_property:nnn
+                          {#5} {##1} {previous-number}
+                      }
+                  }
+                  {
+                    \seq_put_right:Nx #7
+                      {
+                        \chemnum_expandable_get_subcompound_property:nnn
+                          {#5} {##1} {number}
+                      }
                   }
               }
           }
