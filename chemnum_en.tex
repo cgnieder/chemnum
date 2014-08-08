@@ -1,6 +1,6 @@
+% arara: pdflatex: { shell: on }
 %! arara: pdflatex: { shell: on }
-%! arara: pdflatex: { shell: on }
-%! arara: biber
+% arara: biber
 % arara: pdflatex
 % arara: pdflatex
 \documentclass[load-preamble+,babel-options={ngerman,british,american}]{cnltx-doc}
@@ -106,9 +106,9 @@
 
 \chemnum\ requires the bundles \bnd{l3kernel}~\cite{bnd:l3kernel} and
 \bnd{l3packages}~\cite{bnd:l3packages}.  It also requires the
-\pkg{translations} package~\cite{pkg:translations}, \pkg{chemgreek} from the
-\bnd{chemmacros} bundle~\cite{bnd:chemmacros} and the
-\pkg{psfrag}~\cite{pkg:psfrag} package.
+\pkg{translations} package~\cite{pkg:translations},
+\pkg{chemgreek}~\cite{pkg:chemgreek} and the \pkg{psfrag}~\cite{pkg:psfrag}
+package.
 
 \section{News}\label{sec:news}
 The \chemnum\ package has been my first attempt to create a comprehensive
@@ -649,9 +649,13 @@ command.  They are marked with \module{replace}.
     When set to true this adds an incremented integer to the replacement tag.
   \keyval{replace-tag}{text}\Module{general}\Default{TMP}
     The default replacement tag.
+  \keyval{replace-tag-nr}{int}\Module{general}\Default{1}
+    The\sinceversion{1.1} next number used by \cs{replacecmpd} when the
+    default tag is used.
   \keyval{tag}{text}\Module{replace}\Default{TMP\meta{number}}
     The local replacement tag.  \meta{number} is incremented by one at each
-    use and starts with \code{1}.  The increment happens locally.
+    use and starts with \code{1}.  The starting number can be changed with the
+    option \option{replace-tag-nr}.  The increment happens locally.
   \keyval{replace-style}{code}\Module{general}\Default{\cs*{sffamily}}
     Additional \TeX\ code that it placed before the \cs{cmpd} command in the
     replacement.
@@ -896,9 +900,13 @@ be changed.  The complete list of options is this:
     When set to true this adds an incremented integer to the replacement tag.
   \keyval{replace-tag}{text}\Module{general}\Default{TMP}
     The default replacement tag.
+  \keyval{replace-tag-nr}{int}\Module{general}\Default{1}
+    The\sinceversion{1.1} next number used by \cs{replacecmpd} when the
+    default tag is used.
   \keyval{tag}{text}\Module{replace}\Default{TMP\meta{number}}
-    The local replacement tag.   \meta{number} is incremented by one at each
-    use and starts with \code{1}.  The increment happens locally.
+    The local replacement tag.  \meta{number} is incremented by one at each
+    use and starts with \code{1}.  The starting number can be changed with the
+    option \option{replace-tag-nr}.  The increment happens locally.
   \keyval{replace-style}{code}\Module{general}\Default{\cs*{sffamily}}
     Additional \TeX\ code that it placed before the \cs{cmpd} command in the
     replacement.

@@ -1,6 +1,33 @@
-% ----------------------------------------------------------------------------
-\def\chemnumdate{2014/06/02}
-\def\chemnumversion{1.0b}
+% --------------------------------------------------------------------------
+% the CHEMNUM package
+%
+%   a comprehensive approach for the numbering of chemical compounds
+%
+% --------------------------------------------------------------------------
+% Clemens Niederberger
+% --------------------------------------------------------------------------
+% https://github.org/cgnieder/chemnum/
+% contact@mychemistry.eu
+% --------------------------------------------------------------------------
+% If you have any ideas, questions, suggestions or bugs to report, please
+% feel free to contact me.
+% --------------------------------------------------------------------------
+% Copyright 2011-2014 Clemens Niederberger
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+%
+% The Current Maintainer of this work is Clemens Niederberger.
+% --------------------------------------------------------------------------
+\def\chemnumdate{2014/08/08}
+\def\chemnumversion{1.1}
 \def\chemnuminfo{a comprehensive approach for the numbering of chemical compounds}
 
 \RequirePackage{expl3}[2013/07/14]
@@ -53,8 +80,8 @@
     ................................................. \\
     . ~ \msg_info_text:n {chemnum}: ~
       defined~ new~ compound~ `#1'~with~output~
-      \chemnum_expandable_get_compound_property:nn {#1}
-        {counter-representation} . \\
+      `\chemnum_expandable_get_compound_property:nn {#1}
+        {counter-representation}' . \\
     .................................................
   }
 
@@ -279,12 +306,12 @@
   { \chemnum_add_label_format:nn {#1} {#2} }
 
 \newcmpdcounterformat {arabic} { \int_to_arabic:n }
-\newcmpdcounterformat {alph } { \int_to_alph:n }
-\newcmpdcounterformat {Alph } { \int_to_Alph:n }
-\newcmpdcounterformat {roman } { \int_to_roman:n }
-\newcmpdcounterformat {Roman } { \int_to_Roman:n }
-\newcmpdcounterformat {greek } { \chemgreek_int_to_greek:n }
-\newcmpdcounterformat {Greek } { \chemgreek_int_to_Greek:n }
+\newcmpdcounterformat {alph}   { \int_to_alph:n }
+\newcmpdcounterformat {Alph}   { \int_to_Alph:n }
+\newcmpdcounterformat {roman}  { \int_to_roman:n }
+\newcmpdcounterformat {Roman}  { \int_to_Roman:n }
+\newcmpdcounterformat {greek}  { \chemgreek_int_to_greek:n }
+\newcmpdcounterformat {Greek}  { \chemgreek_int_to_Greek:n }
 
 % ----------------------------------------------------------------------------
 %%% options
@@ -436,6 +463,10 @@
       \tl_set:Nn \l__chemnum_compound_replace_tag_tl {#1}
       \bool_set_false:N \l__chemnum_compound_replace_auto_this_bool ,
     tag .groups:n = {replace} ,
+    replace-tag-nr .code:n   =
+      \int_set:Nn \l__chemnum_compound_replace_int { (#1) - 1 } ,
+    replace-tag-nr .groups:n = {general} ,
+    replace-tag-nr .initial:n = {1} ,
     replace-style .tl_set:N = \l__chemnum_compound_replace_format_tl ,
     replace-style .groups:n = {general} ,
     style .code:n =
@@ -1907,4 +1938,5 @@ HISTORY:
                    before they're defined
 2014/06/02 v1.0b - bug fix: list of sublabels can now correctly be sorted and
                    compressed if referenced before they're defined
+2014/08/08 v1.1  - new option `replace-tag-nr'
 
