@@ -194,6 +194,9 @@ Most of the commands will be explained in a later section in more detail.
     \ac{pdf} strings (\cf\ \cs*{texorpdfstring}\marg{\TeX}\marg{\ac{pdf}
       string}). This command is described in
     section~\ref{sec:deta-comp-labels}.
+  \command{replacecmpd}[\code{+}\oarg{options}\marg{\ac{id}}]
+    A command for replacing tags in \ac{eps} files, see
+    section~\ref{sec:replacing-tags-aceps} for details.
   \command{initcmpd}[\oarg{options}\marg{list of \acp{id}}]
     Initiate compound labels.  This command can only be used in the preamble.
     It is desribed in section~\ref{sec:deta-comp-labels}.
@@ -846,7 +849,7 @@ explicitly will overwrite the language sensitivity.  If you only want to adapt
 the separators to your language have a look at
 section~\ref{sec:lang-depend-sett}.
 
-\section{Replacing Tags in \ac{eps} or \ac{ps} Files}
+\section{Replacing Tags in \ac{eps} or \ac{ps} Files}\label{sec:replacing-tags-aceps}
 
 Although it is quite possible to create rection schemes within \LaTeX\
 directly -- for example with the \pkg{chemfig} package~\cite{pkg:chemfig} --
@@ -861,6 +864,12 @@ method is usually used:
   \item Include the \ac{eps} with \cs*{includegraphics}.  Right before that
     use \cs{replacecmpd} once for every temporary tag.
 \end{itemize}
+
+\begin{commands}
+  \command{replacecmpd}[\code{+}\oarg{options}\marg{\ac{id}}]
+    Replaces a tag in the following \ac{eps} file.  This command doesn't have
+    an optional star otherwise the syntax is the same as with \cs{cmpd}.
+\end{commands}
 
 Figure~\ref{fig:scheme-tmp-tags} shows a scheme with temporary tags.  It is
 produced with the following code where the class \cls{standalone} has been
@@ -892,6 +901,12 @@ figure~\ref{fig:scheme-tmp-tags-replaced}.
 The replacement is done with the help of the \pkg{psfrag}
 package~\cite{pkg:psfrag} and its \cs{psfrag} command.  For details on this
 package and its command I refer to its documentation.
+
+Although the examples don't do it the usage of \cs{replacecmpd} and the
+corresponding graphic file should be placed inside a group (probably a
+\env*{figure} or a \env*{scheme} environment) in order to keep the stepping of
+the tag number local: this allows to use the same tags \code{TMP1},
+\code{TMP2}, \ldots, in the next figure again.
 
 As you can see the labels are printed sans serif.  This setting can of course
 be changed.  The complete list of options is this:
