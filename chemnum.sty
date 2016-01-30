@@ -12,7 +12,7 @@
 % If you have any ideas, questions, suggestions or bugs to report, please
 % feel free to contact me.
 % --------------------------------------------------------------------------
-% Copyright 2011-2015 Clemens Niederberger
+% Copyright 2011-2016 Clemens Niederberger
 %
 % This work may be distributed and/or modified under the
 % conditions of the LaTeX Project Public License, either version 1.3
@@ -26,11 +26,11 @@
 %
 % The Current Maintainer of this work is Clemens Niederberger.
 % --------------------------------------------------------------------------
-\def\chemnumdate{2015/05/13}
-\def\chemnumversion{1.1a}
+\def\chemnumdate{2016/01/30}
+\def\chemnumversion{1.1c}
 \def\chemnuminfo{a comprehensive approach for the numbering of chemical compounds}
 
-\RequirePackage{expl3}[2013/07/14]
+\RequirePackage{expl3}[2014/07/17]
 \RequirePackage{xparse,l3keys2e}
 
 % ----------------------------------------------------------------------------
@@ -152,11 +152,17 @@
     .................................................
   }
 
-\msg_new:nnn { chemnum } { deprecated-command }
+\msg_new:nnn {chemnum} {deprecated-command}
   {
     The~ command~ `\token_to_str:N #1'~ \msg_line_context: \c_space_tl is~
     deprecated.~ Use~ `\token_to_str:N #2'~ instead.~ `\token_to_str:N #1'~
     may~ be~ removed~ in~ future~ versions.
+  }
+
+\msg_new:nnn {chemnum} {property-undefined}
+  {
+    The~ property~ `#2'~ for~ compound~ `#1'~ is~ undefined~ and~ thus~
+    cannot~ be~ set~ \msg_line_context:
   }
 
 % ----------------------------------------------------------------------------
@@ -165,13 +171,17 @@
 % #2: new name
 \cs_new_protected:Npn \chemnum_deprecated_command:NN #1#2
   {
-    \cs_new:Npn #1
+    \cs_new_protected:Npn #1
       {
-        \msg_warning:nnnn { chemnum } { deprecated-command }
-          { #1 } { #2 }
+        \msg_warning:nnnn {chemnum} {deprecated-command} {#1} {#2}
         #2
       }
   }
+
+\chemnum_deprecated_command:NN \cmpdsetup \setchemnum
+\chemnum_deprecated_command:NN \cmpdinit \initcmpd
+\chemnum_deprecated_command:NN \cmpdref \replacecmpd
+\chemnum_deprecated_command:NN \cmpdreset \resetcmpd
 
 % ----------------------------------------------------------------------------
 % variants of kernel functions:
@@ -217,55 +227,55 @@
 \seq_new:N \g__chemnum_defined_compounds_seq
 \seq_new:N \g__chemnum_compound_defined_subcompounds_seq
 
-\tl_new:N \l__chemnum_label_format_tl
+\tl_new:N  \l__chemnum_label_format_tl
 \tl_set:Nn \l__chemnum_label_format_tl {\bfseries}
-\tl_new:N \l__chemnum_local_label_format_tl
+\tl_new:N  \l__chemnum_local_label_format_tl
 \tl_set_eq:NN \l__chemnum_local_label_format_tl \l__chemnum_label_format_tl
-\tl_new:N \l__chemnum_default_counter_representation_tl
+\tl_new:N  \l__chemnum_default_counter_representation_tl
 \tl_set:Nn \l__chemnum_default_counter_representation_tl {arabic}
-\tl_new:N \l__chemnum_default_subcounter_representation_tl
+\tl_new:N  \l__chemnum_default_subcounter_representation_tl
 \tl_set:Nn \l__chemnum_default_subcounter_representation_tl {alph}
-\tl_new:N \l__chemnum_pre_counter_default_tl
-\tl_new:N \l__chemnum_post_counter_default_tl
-\tl_new:N \l__chemnum_pre_label_default_tl
-\tl_new:N \l__chemnum_post_label_default_tl
-\tl_new:N \l__chemnum_pre_main_label_default_tl
-\tl_new:N \l__chemnum_post_main_label_default_tl
-\tl_new:N \l__chemnum_main_separator_tl
+\tl_new:N  \l__chemnum_pre_counter_default_tl
+\tl_new:N  \l__chemnum_post_counter_default_tl
+\tl_new:N  \l__chemnum_pre_label_default_tl
+\tl_new:N  \l__chemnum_post_label_default_tl
+\tl_new:N  \l__chemnum_pre_main_label_default_tl
+\tl_new:N  \l__chemnum_post_main_label_default_tl
+\tl_new:N  \l__chemnum_main_separator_tl
 \tl_set:Nn \l__chemnum_main_separator_tl {,}
-\tl_new:N \l__chemnum_sub_separator_tl
+\tl_new:N  \l__chemnum_sub_separator_tl
 \tl_set:Nn \l__chemnum_sub_separator_tl {,}
-\tl_new:N \l__chemnum_compound_separator_tl
+\tl_new:N  \l__chemnum_compound_separator_tl
 \tl_set:Nn \l__chemnum_compound_separator_tl {.}
 
-\tl_new:N \l__chemnum_sep_list_two_tl
+\tl_new:N  \l__chemnum_sep_list_two_tl
 \tl_set:Nn \l__chemnum_sep_list_two_tl { \GetTranslation {chemnum-sep-two} }
-\tl_new:N \l__chemnum_sep_list_more_tl
+\tl_new:N  \l__chemnum_sep_list_more_tl
 \tl_set:Nn \l__chemnum_sep_list_more_tl {,~}
-\tl_new:N \l__chemnum_sep_list_last_two_tl
+\tl_new:N  \l__chemnum_sep_list_last_two_tl
 \tl_set:Nn \l__chemnum_sep_list_last_two_tl { \GetTranslation {chemnum-sep-last-two} }
 
-\tl_new:N \l__chemnum_sep_sublist_two_tl
+\tl_new:N  \l__chemnum_sep_sublist_two_tl
 \tl_set:Nn \l__chemnum_sep_sublist_two_tl {,}
-\tl_new:N \l__chemnum_sep_sublist_more_tl
+\tl_new:N  \l__chemnum_sep_sublist_more_tl
 \tl_set:Nn \l__chemnum_sep_sublist_more_tl {,}
-\tl_new:N \l__chemnum_sep_sublist_last_two_tl
+\tl_new:N  \l__chemnum_sep_sublist_last_two_tl
 \tl_set:Nn \l__chemnum_sep_sublist_last_two_tl {,}
-\tl_new:N \l__chemnum_sep_sublist_range_tl
+\tl_new:N  \l__chemnum_sep_sublist_range_tl
 \tl_set:Nn \l__chemnum_sep_sublist_range_tl {--}
 
-\tl_new:N \l__chemnum_compound_replace_tl
-\tl_new:N \l__chemnum_compound_replace_format_tl
-\tl_new:N \l__chemnum_compound_replace_local_format_tl
-\tl_set:Nn \l__chemnum_compound_replace_format_tl { \sffamily }
-\tl_new:N \l__chemnum_compound_replace_tag_tl
-\tl_set:Nn \l__chemnum_compound_replace_tag_tl { TMP }
-\tl_new:N \l__chemnum_psfrag_texpos_tl
-\tl_new:N \l__chemnum_psfrag_local_texpos_tl
-\tl_set:Nn \l__chemnum_psfrag_texpos_tl { b }
-\tl_new:N \l__chemnum_psfrag_pspos_tl
-\tl_new:N \l__chemnum_psfrag_local_pspos_tl
-\tl_set:Nn \l__chemnum_psfrag_pspos_tl { b }
+\tl_new:N  \l__chemnum_compound_replace_tl
+\tl_new:N  \l__chemnum_compound_replace_format_tl
+\tl_new:N  \l__chemnum_compound_replace_local_format_tl
+\tl_set:Nn \l__chemnum_compound_replace_format_tl {\sffamily}
+\tl_new:N  \l__chemnum_compound_replace_tag_tl
+\tl_set:Nn \l__chemnum_compound_replace_tag_tl {TMP}
+\tl_new:N  \l__chemnum_psfrag_texpos_tl
+\tl_new:N  \l__chemnum_psfrag_local_texpos_tl
+\tl_set:Nn \l__chemnum_psfrag_texpos_tl {b}
+\tl_new:N  \l__chemnum_psfrag_pspos_tl
+\tl_new:N  \l__chemnum_psfrag_local_pspos_tl
+\tl_set:Nn \l__chemnum_psfrag_pspos_tl {b}
 
 \bool_new:N \l__chemnum_compound_local_bool
 \bool_new:N \g__chemnum_initiate_bool
@@ -295,8 +305,8 @@
 \cs_new_protected:Npn \chemnum_add_label_format:nn #1#2
   {
     \cs_if_exist:cTF { __chemnum_#1_label_format:n }
-      { \cs_set:cpn { __chemnum_#1_label_format:n } ##1 { #2 { ##1 } } }
-      { \cs_new:cpn { __chemnum_#1_label_format:n } ##1 { #2 { ##1 } } }
+      { \cs_set:cpn { __chemnum_#1_label_format:n } ##1 { #2 {##1} } }
+      { \cs_new:cpn { __chemnum_#1_label_format:n } ##1 { #2 {##1} } }
     \prop_put:Nnx \l__chemnum_label_formats_prop {#1}
       { \exp_not:c { __chemnum_#1_label_format:n } }
   }
@@ -751,6 +761,10 @@
 % #2: property to be defined
 \cs_new_protected:Npn \chemnum_compound_declare_property:nn #1#2
   {
+    \seq_if_exist:cF { g__chemnum_compound_#1_properties_seq }
+      { \seq_new:c { g__chemnum_compound_#1_properties_seq } }
+    \prop_if_exist:cF { g__chemnum_compound_#1_prop }
+      { \prop_new:c { g__chemnum_compound_#1_prop } }
     \seq_if_in:cnF { g__chemnum_compound_#1_properties_seq } {#2}
       { \seq_gput_right:cn { g__chemnum_compound_#1_properties_seq } {#2} }
   }
@@ -759,11 +773,7 @@
 % #2: properties to be defined
 \cs_new_protected:Npn \chemnum_compound_declare_properties:nn #1#2
   {
-    \seq_if_exist:cF { g__chemnum_compound_#1_properties_seq }
-      { \seq_new:c { g__chemnum_compound_#1_properties_seq } }
-    \prop_if_exist:cF { g__chemnum_compound_#1_prop }
-      { \prop_new:c { g__chemnum_compound_#1_prop } }
-    \clist_map_inline:nn { #2 }
+    \clist_map_inline:nn {#2}
       { \chemnum_compound_declare_property:nn {#1} {##1} }
   }
 
@@ -774,7 +784,7 @@
   {
     \seq_if_in:cnTF { g__chemnum_compound_#1_properties_seq } {#2}
       { \prop_gput:cnn { g__chemnum_compound_#1_prop } {#2} {#3} }
-      { \ERROR }
+      { \msg_error:nnn {chemnum} {property-undefined} {#1} {#2} }
   }
 \cs_generate_variant:Nn \chemnum_compound_set_property:nnn { nnV , nnx }
 
@@ -795,7 +805,7 @@
               \l__chemnum_tmpb_tl
           }
       }
-      { \ERROR }
+      { \msg_error:nnn {chemnum} {property-undefined} {#1} {#2} }
   }
 
 % #1: ID
@@ -835,7 +845,7 @@
   {
     \seq_if_in:cnTF { g__chemnum_compound_#1_#2_properties_seq } {#3}
       { \prop_gput:cnn { g__chemnum_compound_#1_#2_properties_prop } {#3} {#4} }
-      { \ERROR }
+      { \msg_error:nnn {chemnum} {property-undefined} {#1.#2} {#3} }
   }
 \cs_generate_variant:Nn \chemnum_subcompound_set_property:nnnn { nnnV , nnnx }
 
@@ -857,7 +867,7 @@
               \l__chemnum_tmpb_tl
           }
       }
-      { \ERROR }
+      { \msg_error:nnn {chemnum} {property-undefined} {#1.#2} {#3} }
   }
 
 % #1: main ID
@@ -882,7 +892,7 @@
   }
 
 \cs_new:Npn \chemnum_expandable_get_compound_property:nn #1#2
-  { \prop_get:cn { g__chemnum_compound_#1_prop } {#2} }
+  { \prop_item:cn { g__chemnum_compound_#1_prop } {#2} }
 \cs_generate_variant:Nn \chemnum_expandable_get_compound_property:nn { V }
 
 % #1: main ID
@@ -900,7 +910,7 @@
   }
 
 \cs_new:Npn \chemnum_expandable_get_subcompound_property:nnn #1#2#3
-  { \prop_get:cn { g__chemnum_compound_#1_#2_properties_prop } {#3} }
+  { \prop_item:cn { g__chemnum_compound_#1_#2_properties_prop } {#3} }
 
 % ----------------------------------------------------------------------------
 \DeclareExpandableDocumentCommand \cmpdproperty { mm }
@@ -1807,8 +1817,6 @@
 \NewDocumentCommand \replacecmpd { t+ o m }
   { \chemnum_cmpd_replace:nnn { #1 } { #2 } { #3 } }
 
-\chemnum_deprecated_command:NN \cmpdref \replacecmpd
-
 % ----------------------------------------------------------------------------
 % the user level version of the main command:
 \NewDocumentCommand \cmpd { st+O{}m }
@@ -1855,8 +1863,6 @@
   { \chemnum_init:nn {#1} {#2} }
 \@onlypreamble\cmpdinit
 
-\chemnum_deprecated_command:NN \cmpdinit \initcmpd
-
 % ----------------------------------------------------------------------------
 % resetting compound numbering
 \cs_new_protected:Npn \chemnum_reset_compounds:n #1
@@ -1864,8 +1870,6 @@
 
 \NewDocumentCommand \resetcmpd { O{1} }
   { \chemnum_reset_compounds:n {#1} }
-
-\chemnum_deprecated_command:NN \cmpdreset \resetcmpd
 
 % ----------------------------------------------------------------------------
 % language support:
@@ -1911,8 +1915,6 @@
 \NewDocumentCommand \setchemnum { m }
   { \chemnum_setup:n {#1} }
 
-\chemnum_deprecated_command:NN \cmpdsetup \setchemnum
-
 \tex_endinput:D
 
 % ----------------------------------------------------------------------------
@@ -1942,4 +1944,8 @@ HISTORY:
                    compressed if referenced before they're defined
 2014/08/08 v1.1  - new option `replace-tag-nr'
 2015/05/13 v1.1a - fix bug in \replacecmpd
-
+2015/11/23 v1.1b - small adjustments in the property defining mechanism
+                 - more meaningful error messages when unknown properties are
+                   set
+2016/01/30 v1.1c - adapt to deprecation of expl3's \prop_get:Nn (=>
+                   \prop_item:Nn)
