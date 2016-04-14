@@ -693,6 +693,10 @@ command.  They are marked with \module{replace}.
     This option will write visual hints when a label is defined (choices
     \code{true} or \code{def}) or when a label is referenced (choices
     \code{true} or \code{ref}).
+  \keybool{hyperlinks}\Module{general}\Default{false}
+    \sinceversion{1.2}When package \pkg{hyperref} is loaded and this option is
+    set to \code{true} then each main label links back to the first time it
+    has been used (\ie, it has been labelled \emph{and} printed).
 \end{options}
 
 \section{The Counter Settings}\label{sec:counter-settings}
