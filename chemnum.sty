@@ -26,8 +26,8 @@
 %
 % The Current Maintainer of this work is Clemens Niederberger.
 % --------------------------------------------------------------------------
-\def\chemnumdate{2016/04/14}
-\def\chemnumversion{1.2}
+\def\chemnumdate{2016/05/11}
+\def\chemnumversion{1.2a}
 \def\chemnuminfo{a comprehensive approach for the numbering of chemical compounds}
 
 \RequirePackage{expl3}[2016/03/28]
@@ -367,13 +367,13 @@
     sub-counter-format .groups:n = {compound,general} ,
     % label:
     pre-label-code .tl_set:N = \l__chemnum_pre_label_default_tl ,
-    pre-label-code .groups:n = {compound} ,
+    pre-label-code .groups:n = {compound,general} ,
     post-label-code .tl_set:N = \l__chemnum_post_label_default_tl ,
-    post-label-code .groups:n = {compound} ,
+    post-label-code .groups:n = {compound,general} ,
     pre-main-label-code .tl_set:N = \l__chemnum_pre_main_label_default_tl ,
-    pre-main-label-code .groups:n = {compound} ,
+    pre-main-label-code .groups:n = {compound,general} ,
     post-main-label-code .tl_set:N = \l__chemnum_post_main_label_default_tl ,
-    post-main-label-code .groups:n = {compound} ,
+    post-main-label-code .groups:n = {compound,general} ,
     main-sub-sep .tl_set:N = \l__chemnum_compound_separator_tl ,
     main-sub-sep .groups:n = {general,list} ,
     list-label-sep .tl_set:N = \l__chemnum_main_separator_tl ,
@@ -2008,4 +2008,6 @@ HISTORY:
                    \prop_item:Nn)
 2016/04/14 v1.2  - changes to how compounds are saved to auxfile
                  - hyperref support: backlinks to first appearance of label
+2016/05/11 v1.2a - pre- and post-label options now belong both to the
+                   `compound' and the `general' groups
 

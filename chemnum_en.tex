@@ -64,7 +64,7 @@
 \setbondstyle{line width = 0.06642 em}
 \renewcommand*\printatom[1]{\textsmaller{\ensuremath{\mathsf{#1}}}}
 
-\usepackage{array,booktabs}
+\usepackage{array,booktabs,csquotes}
 
 \usepackage{graphicx}
 
@@ -198,7 +198,7 @@ Most of the commands will be explained in a later section in more detail.
     section~\ref{sec:deta-comp-labels}.
   \command{replacecmpd}[\code{+}\oarg{options}\marg{\ac{id}}]
     A command for replacing tags in \ac{eps} files, see
-    section~\ref{sec:replacing-tags-aceps} for details.
+    section~\ref{sec:replacing-tags-eps-ps} for details.
   \command{initcmpd}[\oarg{options}\marg{list of \acp{id}}]
     Initiate compound labels.  This command can only be used in the preamble.
     It is desribed in section~\ref{sec:deta-comp-labels}.
@@ -329,7 +329,7 @@ see section~\ref{sec:chang-input-mark} for details.
   More than one label can be put inside \cs{cmpd}, separated by commas.  Then
   a list like \cmpd{a, b, c, e, g.two} is printed.
 \end{example}
-The Harvard comma (see section~\ref{sec:lang-depend-sett}) in \code{, and}
+The Harvard comma (see section~\ref{sec:lang-depend-sett}) in \enquote{\code{, and}}
 between \cmpd{e} and \cmpd{g.two} suggests that there are options to customize
 the list, see section~\ref{sec:formatting-labels} for more on this.
 
@@ -608,10 +608,14 @@ command.  They are marked with \module{replace}.
   \keybool{merge}\Module{both (l)}\Default{false}
     If set to true a list of labels is merged, \ie,
     ``\cmpd{q.five,a,q.two}'' becomes ``\cmpd[merge=true]{q.five,a,q.two}''.
-  \keyval{pre-label-code}{code}\Module{cmpd (g)}\Default
+  \keyval{pre-label-code}{code}\Module{both (g)}\Default
     Code to be inserted before a label.
-  \keyval{post-label-code}{code}\Module{cmpd (g)}\Default
+  \keyval{post-label-code}{code}\Module{both (g)}\Default
     Code to be inserted after a label.
+  \keyval{pre-main-label-code}{code}\Module{both (g)}\Default
+    \sinceversion{1.2a}Code to be inserted before a main label.
+  \keyval{post-main-label-code}{code}\Module{both (g)}\Default
+    \sinceversion{1.2a}Code to be inserted after a main label.
   \keyval{main-sub-sep}{code}\Module{both (l)}\Default{.}
     The separator symbol that is used in \cs{cmpd} to separate the \meta{main
       \ac{id}} from a \meta{sub \ac{id}}.
@@ -855,7 +859,7 @@ explicitly will overwrite the language sensitivity.  If you only want to adapt
 the separators to your language have a look at
 section~\ref{sec:lang-depend-sett}.
 
-\section{Replacing Tags in \ac{eps} or \ac{ps} Files}\label{sec:replacing-tags-aceps}
+\section{Replacing Tags in \ac{eps} or \ac{ps} Files}\label{sec:replacing-tags-eps-ps}
 
 Although it is quite possible to create rection schemes within \LaTeX\
 directly -- for example with the \pkg{chemfig} package~\cite{pkg:chemfig} --
@@ -894,7 +898,7 @@ The tags now can be replaced with labels.  The result is shown in
 figure~\ref{fig:scheme-tmp-tags-replaced}.
 \begin{example}[compile,exe-with={--shell-escape},runs=1,float=htbp,caption={A scheme with
   temporary tags replaced with labels.\label{fig:scheme-tmp-tags-replaced}}]
-  % code for figure 2
+  % code for figure 2 -- compiled with shell-escape enabled
   \documentclass{standalone}
   \usepackage{graphicx,auto-pst-pdf,chemnum}
   \begin{document}
@@ -971,7 +975,7 @@ respect to the \ac{ps} box that is replaced.  This is described in
 
 \begin{example}[compile,exe-with={--shell-escape},runs=1,float=htbp,caption={A scheme with
   arbitrary tags replaced with labels.\label{fig:scheme-bla-tags-replaced}}]
-  % code for figure 4
+  % code for figure 4 -- compiled with shell-escape enabled
   \documentclass{standalone}
   \usepackage{graphicx,auto-pst-pdf,chemnum}
   \begin{document}
@@ -1025,6 +1029,11 @@ wrong please write me an email and I'll add your language or fix the wrong
 translation.
 
 \begin{table}[htbp]
+  \newcommand*\showlanguageentry[1]{%
+    #1
+    & \visualizespaces{\GetTranslationFor{#1}{chemnum-sep-two}}
+    & \visualizespaces{\GetTranslationFor{#1}{chemnum-sep-last-two}}
+  }
   \centering
   \caption{Available languages}
   \label{tab:languages}
@@ -1034,45 +1043,19 @@ translation.
       \bfseries chemnum-sep-two &
       \bfseries chemnum-sep-last-two \\
     \midrule
-      English
-        & \visualizespaces{\GetTranslationFor{English}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{English}{chemnum-sep-last-two}} \\
-      American
-        & \visualizespaces{\GetTranslationFor{American}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{American}{chemnum-sep-last-two}} \\
-      German
-        & \visualizespaces{\GetTranslationFor{German}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{German}{chemnum-sep-last-two}} \\
-      French
-        & \visualizespaces{\GetTranslationFor{French}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{French}{chemnum-sep-last-two}} \\
-      Spanish
-        & \visualizespaces{\GetTranslationFor{Spanish}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{Spanish}{chemnum-sep-last-two}} \\
-      Italian
-        & \visualizespaces{\GetTranslationFor{Italian}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{Italian}{chemnum-sep-last-two}} \\
-      Catalan
-        & \visualizespaces{\GetTranslationFor{Catalan}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{Catalan}{chemnum-sep-last-two}} \\
-      Portuguese
-        & \visualizespaces{\GetTranslationFor{Portuguese}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{Portuguese}{chemnum-sep-last-two}} \\
-      Dutch
-        & \visualizespaces{\GetTranslationFor{Dutch}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{Dutch}{chemnum-sep-last-two}} \\
-      Danish
-        & \visualizespaces{\GetTranslationFor{Danish}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{Danish}{chemnum-sep-last-two}} \\
-      Swedish
-        & \visualizespaces{\GetTranslationFor{Swedish}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{Swedish}{chemnum-sep-last-two}} \\
-      Finnish
-        & \visualizespaces{\GetTranslationFor{Finnish}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{Finnish}{chemnum-sep-last-two}} \\
-      Norwegian
-        & \visualizespaces{\GetTranslationFor{Norwegian}{chemnum-sep-two}}
-        & \visualizespaces{\GetTranslationFor{Norwegian}{chemnum-sep-last-two}} \\
+      \showlanguageentry{English} \\
+      \showlanguageentry{American} \\
+      \showlanguageentry{German} \\
+      \showlanguageentry{French} \\
+      \showlanguageentry{Spanish} \\
+      \showlanguageentry{Italian} \\
+      \showlanguageentry{Catalan} \\
+      \showlanguageentry{Portuguese} \\
+      \showlanguageentry{Dutch} \\
+      \showlanguageentry{Danish} \\
+      \showlanguageentry{Swedish} \\
+      \showlanguageentry{Finnish} \\
+      \showlanguageentry{Norwegian} \\
     \bottomrule
   \end{tabular}
 \end{table}
