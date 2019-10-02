@@ -1,8 +1,3 @@
-% arara: pdflatex: { shell: on }
-%! arara: pdflatex: { shell: on }
-% arara: biber
-% arara: pdflatex
-% arara: pdflatex
 % --------------------------------------------------------------------------
 % the CHEMNUM package
 %
@@ -31,6 +26,11 @@
 %
 % The Current Maintainer of this work is Clemens Niederberger.
 % --------------------------------------------------------------------------
+% arara: pdflatex: { shell: on , interaction: nonstopmode }
+% !arara: pdflatex: { shell: on , interaction: nonstopmode }
+% !arara: biber
+% !arara: pdflatex { interaction: nonstopmode }
+% !arara: pdflatex { interaction: nonstopmode }
 \documentclass[load-preamble+,ngerman,british,american]{cnltx-doc}
 \usepackage[utf8]{inputenc}
 \usepackage{chemnum}
@@ -75,7 +75,7 @@
     keyis,
     marginnote, midrule,
     NewDocumentCommand,
-    schemestart,schemestop,setatomsep,
+    schemestart,schemestop,setchemfig,
     theffbibliography, toprule
   } ,
   index-setup = { othercode=\footnotesize,level=\addsec },
@@ -88,8 +88,10 @@
 \usepackage{chemformula}
 \setchemformula{format=\libertineLF}
 \usepackage{chemfig,relsize}
-\setatomsep{1.78500 em}
-\setbondstyle{line width = 0.06642 em}
+\setchemfig{
+  atom sep = 1.78500 em ,
+  bond style = {line width = 0.06642 em}
+}
 \renewcommand*\printatom[1]{\textsmaller{\ensuremath{\mathsf{#1}}}}
 
 \usepackage{array,booktabs,csquotes}
@@ -1185,5 +1187,3 @@ above commands are defined in terms of them:
 \end{sourcecode}
 
 \end{document}
-
-
