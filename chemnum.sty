@@ -524,14 +524,15 @@
 % if the `chemnum' package is removed from the preamble
 \AtBeginDocument
   {
-    \if@filesw
-      \iow_now:Nn \@auxout
-        {
-          \providecommand\chemnum@cmpd[8]{} ^^J
-          \providecommand\chemnum@subcmpd[4]{} ^^J
-          \providecommand\chemnum@check{}
-        }
-    \fi
+    \legacy_if:nT {@filesw}
+      {
+        \iow_now:Nn \@auxout
+          {
+            \providecommand\chemnum@cmpd[8]{} ^^J
+            \providecommand\chemnum@subcmpd[4]{} ^^J
+            \providecommand\chemnum@check{}
+          }
+      }
   }
 
 % we use this one to trigger a LaTeX rerun warning -- to be precise the
@@ -540,7 +541,11 @@
   { \AtEndDocument { \def \chemnum@check { \@tempswatrue } } }
 
 % add the rerun check at the end:
-\AtEndDocument { \if@filesw \iow_now:Nn \@auxout { \chemnum@check } \fi }
+\AtEndDocument
+  {
+    \legacy_if:nT {@filesw}
+      { \iow_now:Nn \@auxout { \chemnum@check } }
+  }
 
 % ----------------------------------------------------------------------------
 % initiating new compounds
@@ -705,7 +710,8 @@
     \c_chemnum_nothing_here_tl
     \msg_warning:nnnn {chemnum} {missing-label} {#1} {#2}
   }
-
+\cs_generate_variant:Nn \__chemnum_nothing_here:nn {x}
+  
 % ----------------------------------------------------------------------------
 \cs_new_protected:Npn \chemnum_log_main:n #1
   {
@@ -953,13 +959,11 @@
 % #8: label format
 \cs_new_protected:Npn \__chemnum_write_compound_to_auxfile_x:nnnnnnnn #1#2#3#4#5#6#7#8
   {
-    \if@filesw
-      \token_if_eq_meaning:NNT \@nodocument \relax
-        {
-          \iow_now:Nx \@auxout
-            { \exp_not:N \chemnum@cmpd {#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8} }
-        }
-    \fi
+    \legacy_if:nT {@filesw}
+      {
+        \iow_now:Nx \@auxout
+          { \exp_not:N \chemnum@cmpd {#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8} }
+      }
   }
 \cs_generate_variant:Nn \__chemnum_write_compound_to_auxfile_x:nnnnnnnn { nnnVVVVV }
 
@@ -981,13 +985,11 @@
 % #3: counter representation
 \cs_new_protected:Npn \__chemnum_write_subcompound_to_auxfile_x:nnnn #1#2#3#4
   {
-    \if@filesw
-      \token_if_eq_meaning:NNT \@nodocument \relax
-        {
-          \iow_now:Nx \@auxout
-            { \exp_not:N \chemnum@subcmpd {#1}{#2}{#3}{#4} }
-        }
-    \fi
+    \legacy_if:nT {@filesw}
+      {
+        \iow_now:Nx \@auxout
+          { \exp_not:N \chemnum@subcmpd {#1}{#2}{#3}{#4} }
+      }
   }
 
 \cs_new_protected:Npn \chemnum_save_subcompound_to_auxfile:nn #1#2
@@ -1086,7 +1088,6 @@
 % #3: sub ID
 \cs_new_protected:Npn \chemnum_declare_subcompound:nnn #1#2#3
   {
-    % \keys_set:nn {chemnum} {#1}
     \chemnum_subcompound_if_initiated:nnF {#2} {#3}
       {
         \bool_if:NT \g__chemnum_initiate_sub_bool
@@ -1456,7 +1457,7 @@
       \l__chemnum_tmpc_seq
       \l__chemnum_sub_separator_tl
       {#5}
-    \seq_remove_duplicates:N \l__chemnum_tmpc_seq
+    \seq_remove_duplicates:N \l__chemnum_tmpc_seq  
     \seq_map_inline:Nn \l__chemnum_tmpc_seq
       {
         \bool_if:NF #2
@@ -1554,7 +1555,7 @@
                   { \__chemnum_nothing_here:nn {##1} {#5} }
               }
           }
-          { \__chemnum_nothing_here:nn { \seq_use:Nnnn #3 {,~} {,~} {,~} } {#5} }
+          { \__chemnum_nothing_here:xn { \seq_use:Nnnn #3 {,~} {,~} {,~} } {#5} }
       }
   }
 
@@ -1982,8 +1983,8 @@
   }
 
 \NewDocumentCommand \initcmpd {O{}m}
-  { \chemnum_init:nn {#1} {#2} }
-\@onlypreamble\cmpdinit
+  { \AtBeginDocument { \chemnum_init:nn {#1} {#2} } }
+\@onlypreamble\initcmpd
 
 % ----------------------------------------------------------------------------
 % resetting compound numbering
