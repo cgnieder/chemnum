@@ -848,11 +848,18 @@ method is usually used:
 \begin{itemize}
   \item Create the scheme and place temporary tags like \code{TMP1},
     \code{TMP2} and so on where you want the compound labels to be.
-  \item Export the scheme as \ac{eps} or \ac{ps} figure where you make sure
-    that the tags are embedded as text strings.
+  \item Export the scheme as \ac{eps} or \ac{ps} figure \emph{where you make
+      sure that the tags are embedded as text strings}.  If the tags are not
+    present as text strings they cannot be replaced.  This is a common source
+    of user problems.
   \item Include the \ac{eps} with \cs*{includegraphics}.  Right before that
     use \cs{replacecmpd} once for every temporary tag.
 \end{itemize}
+\emph{For the actual replacement please make sure that you compile with
+  \code{shell-escape} enabled.  If you compile with \code{pdflatex} you
+  probably also need \pkg{auto-pst-pdf}~\cite{pkg:auto-pst-pdf} loaded. In
+  subsequent runs load it with option \code{off} when you turned off
+  \code{shell-escape}.}
 
 \begin{commands}
   \command{replacecmpd}[\code{+}\oarg{options}\marg{\ac{id}}]
