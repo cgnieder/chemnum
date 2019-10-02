@@ -238,6 +238,7 @@
 \seq_new:N \g__chemnum_defined_compounds_seq
 \seq_new:N \g__chemnum_compound_defined_subcompounds_seq
 
+\tl_const:Nn \c_chemnum_nothing_here_tl {??}
 \tl_new:N  \l__chemnum_label_format_tl
 \tl_set:Nn \l__chemnum_label_format_tl {\bfseries}
 \tl_new:N  \l__chemnum_local_label_format_tl
@@ -692,11 +693,18 @@
   }
 
 % ----------------------------------------------------------------------------
+
 \cs_new:Npn \__chemnum_nothing_here:n #1
-  { ?? \msg_warning:nnn {chemnum} {missing-label} {#1} }
+  {
+    \c_chemnum_nothing_here_tl
+    \msg_warning:nnn {chemnum} {missing-label} {#1}
+  }
 
 \cs_new:Npn \__chemnum_nothing_here:nn #1#2
-  { ?? \msg_warning:nnnn {chemnum} {missing-label} {#1} {#2} }
+  {
+    \c_chemnum_nothing_here_tl
+    \msg_warning:nnnn {chemnum} {missing-label} {#1} {#2}
+  }
 
 % ----------------------------------------------------------------------------
 \cs_new_protected:Npn \chemnum_log_main:n #1
@@ -1188,7 +1196,7 @@
       \chemnum_get_compound_property:nn {#1} {previous-label-format}
       {
         \chemnum_get_compound_property_or:nnn {#1}
-          { previous-counter-representation }
+          {previous-counter-representation}
           {
             \__chemnum_nothing_here:n {#1}
             \__chemnum_rerun:
@@ -1211,7 +1219,7 @@
         \chemnum_get_subcompound_property_or:nnnn {#1} {#2}
           {previous-counter-representation}
           {
-           \__chemnum_nothing_here:nn {#2} {#1}
+            \__chemnum_nothing_here:nn {#2} {#1}
             \__chemnum_rerun:
           }
       }
@@ -1318,8 +1326,8 @@
   {
     \bool_if:NTF #2
       {
-        \chemnum_hyper_link:nn {#4}
-          { \chemnum_compound_read:n {#4} }
+        \bool_if:NF \l__chemnum_sub_only_bool
+          { \chemnum_hyper_link:nn {#4} { \chemnum_compound_read:n {#4} } }
         \bool_if:NT #1
           { \msg_error:nn {chemnum} {erroneous-argument-combination} }
       }
@@ -2071,4 +2079,4 @@ HISTORY:
                    contain underscores or similar tokens
                  - easier customization possibilities of the `show-keys'
                    functions
-2019/10/02 v1.2c - fix issue #5
+2019/10/02 v1.2c - fix issues #5, #7
