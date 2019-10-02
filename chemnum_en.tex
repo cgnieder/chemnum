@@ -26,11 +26,11 @@
 %
 % The Current Maintainer of this work is Clemens Niederberger.
 % --------------------------------------------------------------------------
-% arara: pdflatex: { shell: on , interaction: nonstopmode }
+% !arara: pdflatex: { shell: on , interaction: nonstopmode }
 % !arara: pdflatex: { shell: on , interaction: nonstopmode }
 % !arara: biber
-% !arara: pdflatex { interaction: nonstopmode }
-% !arara: pdflatex { interaction: nonstopmode }
+% arara: pdflatex: { interaction: nonstopmode }
+% arara: pdflatex: { interaction: nonstopmode }
 \documentclass[load-preamble+,ngerman,british,american]{cnltx-doc}
 \usepackage[utf8]{inputenc}
 \usepackage{chemnum}
@@ -141,57 +141,6 @@
 \pkg{translations} package~\cite{pkg:translations},
 \pkg{chemgreek}~\cite{pkg:chemgreek} and the \pkg{psfrag}~\cite{pkg:psfrag}
 package.
-
-\section{News}\label{sec:news}
-The \chemnum\ package has been my first attempt to create a comprehensive
-labeling package for chemical compounds.  However, it had and has more than
-one weakness and its code was -- to be frank -- a mess.  Version~1 is now a
-complete re-write of \chemnum\ where I tried to achieve several points:
-\begin{itemize}
-  \item A cleaner code internally.
-  \item A cleaner user interface, \ie, more user macros for different tasks, a
-    unified naming of the commands and a less redundant naming of the
-    options.
-  \item Extended functionality such as sorting and compressing of sublabel
-    lists and sorting and merging of main label lists.
-\end{itemize}
-
-Although the syntax seems more or less the same at first sight quite a number
-of changes have been made that make version~1 incompatible with version~0.
-While I thought a while about maintaining backwards compatibility version~0
-was known to be in an experimental stage where everything was allowed to be
-changed at any time.  So users \emph{could} know there was a risk.  I have a
-feeling that many users nevertheless didn't realize this and may be bothered
-by this incompatibility.  So I am well aware that the update will
-inconvenience some users.  However, since version~0 won't be updated any more
-it made more sense to make a breaking update once.
-
-The same is not true for version~1.  The syntax and commands described in this
-manual will not be changed as easily and from this version on I will take care
-of backwards compatibility.
-
-For those people wanting to keep older versions: they are are still available
-from websites such as \website{ctanhg.scharrer-online.de} or
-\securewebsite{bitbucket.org/cgnieder/chemnum}.  You can also email me for an
-older version.
-
-Many commands have got a new name! The most important ones are:
-\begin{itemize}
-  \item \cs*{cmpdref}; this is now called \cs{replacecmpd}.
-  \item \cs*{cmpdinit}; this is now called \cs{initcmpd}.
-  \item \cs*{cmpdreset}; this is now called \cs{resetcmpd}.
-  \item \cs*{cmpdsetup}; this is now called \cs{setchemnum}.
-\end{itemize}
-However, there are many more changes.  Basically all options have new names
-and often do their thing slightly different from the way things have been
-before.
-
-Please note that this overall change does not mean that version~1 is version~0
-declared stable.  It is very likely that version~1 will now have quite a
-number of bugs to be fixed and probably missing features, too.  So I'd be very
-glad to receive feedback either on \chemnum's homepage
-\securewebsite{github.com/cgnieder/chemnum} or via email to
-\email{contact@mychemistry.eu}.
 
 \section{Overview over the Available Commands}\label{sec:overv-over-avail}
 
@@ -1185,5 +1134,56 @@ above commands are defined in terms of them:
   \NewDocumentCommand\subcmpdshowdef{mm}{\chemnumshowdef{#2 (#1)}}
   \NewDocumentCommand\subcmpdshowref{mm}{\chemnumshowref{#2}}
 \end{sourcecode}
+
+\section{From Version~0 to Version~1}\label{sec:news}
+The \chemnum\ package has been my first attempt to create a comprehensive
+labeling package for chemical compounds.  However, it had and has more than
+one weakness and its code was -- to be frank -- a mess.  Version~1 is now a
+complete re-write of \chemnum\ where I tried to achieve several points:
+\begin{itemize}
+  \item A cleaner code internally.
+  \item A cleaner user interface, \ie, more user macros for different tasks, a
+    unified naming of the commands and a less redundant naming of the
+    options.
+  \item Extended functionality such as sorting and compressing of sublabel
+    lists and sorting and merging of main label lists.
+\end{itemize}
+
+Although the syntax seems more or less the same at first sight quite a number
+of changes have been made that make version~1 incompatible with version~0.
+While I thought a while about maintaining backwards compatibility version~0
+was known to be in an experimental stage where everything was allowed to be
+changed at any time.  So users \emph{could} know there was a risk.  I have a
+feeling that many users nevertheless didn't realize this and may be bothered
+by this incompatibility.  So I am well aware that the update will
+inconvenience some users.  However, since version~0 won't be updated any more
+it made more sense to make a breaking update once.
+
+The same is not true for version~1.  The syntax and commands described in this
+manual will not be changed as easily and from this version on I will take care
+of backwards compatibility.
+
+For those people wanting to keep older versions: they are are still available
+from websites such as \website{ctanhg.scharrer-online.de} or
+\securewebsite{bitbucket.org/cgnieder/chemnum}.  You can also email me for an
+older version.
+
+Many commands have got a new name! The most important ones are:
+\begin{itemize}
+  \item \cs*{cmpdref}; this is now called \cs{replacecmpd}.
+  \item \cs*{cmpdinit}; this is now called \cs{initcmpd}.
+  \item \cs*{cmpdreset}; this is now called \cs{resetcmpd}.
+  \item \cs*{cmpdsetup}; this is now called \cs{setchemnum}.
+\end{itemize}
+However, there are many more changes.  Basically all options have new names
+and often do their thing slightly different from the way things have been
+before.
+
+Please note that this overall change does not mean that version~1 is version~0
+declared stable.  It is very likely that version~1 will now have quite a
+number of bugs to be fixed and probably missing features, too.  So I'd be very
+glad to receive feedback either on \chemnum's homepage
+\securewebsite{github.com/cgnieder/chemnum} or via email to
+\email{contact@mychemistry.eu}.
 
 \end{document}

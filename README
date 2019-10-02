@@ -1,13 +1,11 @@
 --------------------------------------------------------------------------
-chemnum v1.2a 2016/05/11
+chemnum v1.2c 2019/10/02
 
   a comprehensive approach for the numbering of chemical compounds
 
 --------------------------------------------------------------------------
 Clemens Niederberger
-Web:
-  v0.* https://bitbucket.org/cgnieder/chemnum/
-  v1.* https://github.com/cgnieder/chemnum
+Web:    https://github.com/cgnieder/chemnum
 E-Mail: contact@mychemistry.eu
 --------------------------------------------------------------------------
 Copyright 2011--2019 Clemens Niederberger
@@ -31,6 +29,4 @@ This work consists of the files
 - chemnum.sty,
 - chemnum_en.tex, chemnum_en.pdf
 - README
---------------------------------------------------------------------------
-Version 1 is a complete re-write from scratch of the `chemnum' package.
 --------------------------------------------------------------------------
