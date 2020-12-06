@@ -945,7 +945,10 @@
   { \chemnum_compound_set_property:nnn {#2} {#1} {#3} }
 
 \NewDocumentCommand \setcmpdlabel {mm}
-  { \chemnum_compound_set_property:nnn {#1} {counter-representation} {#2} }
+  {
+    \chemnum_compound_set_property:nnn {#1} {counter-representation} {#2}
+    \chemnum_finalize_compound:n {#1}
+  }
 
 % ----------------------------------------------------------------------------
 % initiating subcompounds:
