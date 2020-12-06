@@ -522,7 +522,7 @@
 % auxiliary file -- we'll use the .aux file
 % first let's add dummy definitions so we can hopefully avoid error messages
 % if the `chemnum' package is removed from the preamble
-\AtBeginDocument
+\hook_gput_code:nnn {begindocument} {chemnum}
   {
     \legacy_if:nT {@filesw}
       {
@@ -538,10 +538,13 @@
 % we use this one to trigger a LaTeX rerun warning -- to be precise the
 % ``Label(s) may have changed'' warning:
 \cs_new_protected:Npn \__chemnum_rerun:
-  { \AtEndDocument { \def \chemnum@check { \@tempswatrue } } }
+  {
+    \hook_gput_code:nnn {enddocument} {code}
+      { \def \chemnum@check { \@tempswatrue } }
+  }
 
 % add the rerun check at the end:
-\AtEndDocument
+\hook_gput_code:nnn {enddocument} {code}
   {
     \legacy_if:nT {@filesw}
       { \iow_now:Nn \@auxout { \chemnum@check } }
@@ -968,10 +971,13 @@
 % #8: label format
 \cs_new_protected:Npn \__chemnum_write_compound_to_auxfile_x:nnnnnnnn #1#2#3#4#5#6#7#8
   {
-    \legacy_if:nT {@filesw}
+    \hook_gput_code:nnn {begindocument} {chemnum}
       {
-        \iow_now:Nx \@auxout
-          { \exp_not:N \chemnum@cmpd {#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8} }
+        \legacy_if:nT {@filesw}
+          {
+            \iow_now:Nx \@auxout
+              { \exp_not:N \chemnum@cmpd {#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8} }
+          }
       }
   }
 \cs_generate_variant:Nn \__chemnum_write_compound_to_auxfile_x:nnnnnnnn {nnnVVVVV}
